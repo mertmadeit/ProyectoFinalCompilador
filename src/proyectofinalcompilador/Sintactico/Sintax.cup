@@ -1,0 +1,136 @@
+package proyectofinalcompilador.Sintactico;
+
+import java_cup.runtime.Symbol;
+
+parser code
+{:
+    private Symbol s;
+    private boolean errorEncontrado = false;
+    private Double resultado = null;
+
+    public void syntax_error(Symbol s){
+        this.s = s;
+        this.errorEncontrado = true;
+    }
+
+    public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception {
+        this.s = s;
+        this.errorEncontrado = true;
+    }
+
+    public Symbol getS(){
+        return this.s;
+    }
+
+    public boolean hayError(){
+        return this.errorEncontrado;
+    }
+
+    public void resetError(){
+        this.s = null;
+        this.errorEncontrado = false;
+        this.resultado = null;
+    }
+
+    public void setResultado(Double r){
+        this.resultado = r;
+    }
+
+    public Double getResultado(){
+        return this.resultado;
+    }
+:};
+
+terminal Linea, Comillas, T_dato, Int, Cadena, If, Else, Do, While, For,
+    Igual, Suma, Resta, Multiplicacion, Division, Op_logico, Op_relacional,
+    Op_atribucion, Op_incremento, Op_booleano, Parentesis_a, Parentesis_c,
+    Llave_a, Llave_c, Corchete_a, Corchete_c, Main, P_coma, Identificador,
+    ERROR;
+terminal String Numero;
+
+non terminal INICIO, SENTENCIA, DECLARACION, DECLARACION_FOR, IF, IF_ELSE,
+    WHILE, DO_WHILE, FOR, SENTENCIA_BOOLEANA, SENTENCIA_FOR;
+non terminal Double EXPRESION, TERMINO, FACTOR, FACTOR_PAREN;
+
+start with INICIO;
+
+INICIO ::=
+    Int Main Parentesis_a Parentesis_c Llave_a SENTENCIA Llave_c |
+    Main Parentesis_a Parentesis_c Llave_a SENTENCIA Llave_c |
+    EXPRESION:e {: parser.setResultado(e); :}
+;
+SENTENCIA ::=
+    SENTENCIA DECLARACION |
+    DECLARACION |
+    SENTENCIA IF |
+    IF |
+    SENTENCIA IF_ELSE |
+    IF_ELSE |
+    SENTENCIA WHILE |
+    WHILE |
+    SENTENCIA DO_WHILE |
+    DO_WHILE |
+    SENTENCIA FOR |
+    FOR
+;
+DECLARACION ::=
+    Int Identificador P_coma |
+    Int Identificador Op_atribucion Numero P_coma |
+    Int Identificador Igual Numero P_coma |
+    Int Identificador Op_incremento P_coma |
+    Int Op_incremento Identificador P_coma |
+    T_dato Identificador P_coma |
+    T_dato Identificador Op_atribucion Numero P_coma |
+    T_dato Identificador Igual Numero P_coma |
+    T_dato Identificador Op_incremento P_coma |
+    T_dato Op_incremento Identificador P_coma |
+    Cadena Identificador Op_atribucion Comillas Comillas P_coma |
+    Cadena Identificador Igual Comillas Comillas P_coma |
+    Cadena Identificador Op_atribucion Comillas Identificador Comillas P_coma |
+    Cadena Identificador Igual Comillas Identificador Comillas P_coma
+;
+IF ::= If Parentesis_a SENTENCIA_BOOLEANA Parentesis_c Llave_a SENTENCIA Llave_c
+;
+SENTENCIA_BOOLEANA ::=
+    Op_booleano |
+    Identificador Op_relacional Op_booleano |
+    Identificador Op_relacional Numero |
+    Identificador Op_relacional Identificador |
+    Identificador Op_relacional Comillas Comillas |
+    Identificador Op_relacional Comillas Identificador Comillas
+;
+IF_ELSE ::= If Parentesis_a SENTENCIA_BOOLEANA Parentesis_c Llave_a SENTENCIA Llave_c Else Llave_a SENTENCIA Llave_c
+;
+WHILE ::= While Parentesis_a SENTENCIA_BOOLEANA Parentesis_c Llave_a SENTENCIA Llave_c
+;
+DO_WHILE ::= Do Llave_a SENTENCIA Llave_c While Parentesis_a SENTENCIA_BOOLEANA Parentesis_c P_coma
+;
+FOR ::= For Parentesis_a SENTENCIA_FOR Parentesis_c Llave_a SENTENCIA Llave_c
+;
+SENTENCIA_FOR ::=
+    T_dato Identificador Igual Numero P_coma SENTENCIA_BOOLEANA P_coma DECLARACION_FOR |
+    Identificador Igual Numero P_coma SENTENCIA_BOOLEANA P_coma DECLARACION_FOR
+;
+DECLARACION_FOR ::=
+    Identificador Op_atribucion Numero |
+    Identificador Op_incremento |
+    Op_incremento Identificador
+;
+EXPRESION ::=
+    EXPRESION:e Suma TERMINO:t       {: RESULT = e + t; :} |
+    EXPRESION:e Resta TERMINO:t      {: RESULT = e - t; :} |
+    TERMINO:t                        {: RESULT = t; :}
+;
+TERMINO ::=
+    TERMINO:t Multiplicacion FACTOR:f {: RESULT = t * f; :} |
+    TERMINO:t Division FACTOR:f       {: RESULT = (f != 0) ? t / f : 0.0; :} |
+    FACTOR:f                          {: RESULT = f; :} |
+    TERMINO:t FACTOR_PAREN:f          {: RESULT = t * f; :}
+;
+FACTOR ::=
+    Numero:n                           {: RESULT = Double.parseDouble(n); :} |
+    FACTOR_PAREN:p                     {: RESULT = p; :}
+;
+FACTOR_PAREN ::=
+    Parentesis_a EXPRESION:e Parentesis_c {: RESULT = e; :}
+;

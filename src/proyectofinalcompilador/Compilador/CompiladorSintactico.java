@@ -14,12 +14,14 @@ public class CompiladorSintactico {
     private String resultado;
     private String error;
     private String codigoIntermedio;
+    private String codigoObjeto;
     private TablaSimbolos tablaSimbolos;
 
     public CompiladorSintactico() {
         resultado = "";
         error = "";
         codigoIntermedio = "";
+        codigoObjeto = "";
         tablaSimbolos = new TablaSimbolos();
     }
 
@@ -37,6 +39,10 @@ public class CompiladorSintactico {
             java_cup.runtime.Symbol sres = s.parse();
             tablaSimbolos = s.getTabla();
             codigoIntermedio = s.getGenInter().getCodigoCompleto();
+
+            // Generar Código Objeto
+            proyectofinalcompilador.CodigoObjeto.GeneradorObjeto genObj = new proyectofinalcompilador.CodigoObjeto.GeneradorObjeto();
+            codigoObjeto = genObj.generarCodigo(codigoIntermedio);
 
             Object rawRes = s.getResultado();
             if (rawRes == null && sres != null) {
@@ -97,6 +103,10 @@ public class CompiladorSintactico {
 
     public String getCodigoIntermedio() {
         return codigoIntermedio;
+    }
+
+    public String getCodigoObjeto() {
+        return codigoObjeto;
     }
 
     public TablaSimbolos getTablaSimbolos() {

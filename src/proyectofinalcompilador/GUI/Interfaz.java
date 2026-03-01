@@ -404,8 +404,10 @@ public class Interfaz extends javax.swing.JFrame {
                                         "Tokens encontrados: " + compiladorLex.getTokens().size());
                         TextAreaSintactico.setText(compiladorSintax.getResultado());
                         TextAreaCodigoIntermedio.setText(compiladorSintax.getCodigoIntermedio());
+                        TextAreaCodigoObjeto.setText(compiladorSintax.getCodigoObjeto());
                 } else {
                         TextAreaCodigoIntermedio.setText("");
+                        TextAreaCodigoObjeto.setText("");
                         StringBuilder mensajeError = new StringBuilder();
                         if (!exitoLex) {
                                 mensajeError.append("Errores léxicos:\n");

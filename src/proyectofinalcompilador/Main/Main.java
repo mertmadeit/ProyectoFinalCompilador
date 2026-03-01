@@ -20,5 +20,6 @@ public class Main {
 
         Interfaz interfaz = new Interfaz();
         interfaz.setVisible(true);
+        interfaz.setLocationRelativeTo(null); // Centrar la ventana
     }
 }

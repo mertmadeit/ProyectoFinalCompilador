@@ -54,7 +54,8 @@ parser code
 terminal Linea, Comillas, Int, If, Else, Do, While, For,
     Igual, Suma, Resta, Multiplicacion, Division, Op_logico,
     Parentesis_a, Parentesis_c, Llave_a, Llave_c, Corchete_a, Corchete_c, 
-    Main, P_coma, ERROR, Punto, Public, Class, Static, Void, String_type;
+    Main, P_coma, ERROR, Punto, Public, Class, Static, Void, String_type,
+    Begin, End, Private, EndWhile, Switch, Case, Break, Default, Println, In, Then, Return, Coma;
 terminal String Numero, T_dato, Identificador, Op_relacional, Op_booleano, Op_atribucion, Op_incremento, Cadena;
 
 non terminal String INICIO, PROGRAMA, CLASE, METODO, PARAMETROS, SENTENCIA, CONTENIDO_PARENTESIS, LISTA_SENTENCIAS, DECLARACION, EXPRESION, TERMINO, FACTOR;

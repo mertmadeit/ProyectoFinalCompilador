@@ -82,6 +82,30 @@ public class CompiladorLexico {
                 return "While";
             case sym.For:
                 return "For";
+            case sym.Begin:
+                return "Begin";
+            case sym.End:
+                return "End";
+            case sym.Private:
+                return "Private";
+            case sym.EndWhile:
+                return "EndWhile";
+            case sym.Switch:
+                return "Switch";
+            case sym.Case:
+                return "Case";
+            case sym.Break:
+                return "Break";
+            case sym.Default:
+                return "Default";
+            case sym.Println:
+                return "Println";
+            case sym.In:
+                return "In";
+            case sym.Then:
+                return "Then";
+            case sym.Return:
+                return "Return";
             case sym.Igual:
                 return "Igual";
             case sym.Suma:
@@ -118,6 +142,8 @@ public class CompiladorLexico {
                 return "Main";
             case sym.P_coma:
                 return "Punto y coma";
+            case sym.Coma:
+                return "Coma";
             case sym.Identificador:
                 return "Identificador";
             case sym.Numero:

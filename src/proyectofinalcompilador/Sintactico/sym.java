@@ -8,41 +8,54 @@ package proyectofinalcompilador.Sintactico;
 /** CUP generated class containing symbol constants. */
 public class sym {
   /* terminals */
-  public static final int Op_relacional = 34;
+  public static final int Op_relacional = 47;
+  public static final int In = 40;
   public static final int Class = 27;
-  public static final int Op_booleano = 35;
+  public static final int Begin = 31;
+  public static final int Coma = 43;
+  public static final int End = 32;
+  public static final int Op_booleano = 48;
   public static final int Llave_c = 19;
   public static final int Llave_a = 18;
   public static final int If = 5;
   public static final int Void = 29;
-  public static final int T_dato = 32;
+  public static final int T_dato = 45;
   public static final int Static = 28;
+  public static final int Default = 38;
   public static final int Else = 6;
+  public static final int Break = 37;
   public static final int Corchete_c = 21;
   public static final int Corchete_a = 20;
+  public static final int Then = 41;
   public static final int Punto = 25;
+  public static final int Return = 42;
   public static final int While = 8;
   public static final int Division = 14;
   public static final int Int = 4;
-  public static final int Cadena = 38;
+  public static final int Cadena = 51;
   public static final int Parentesis_c = 17;
   public static final int Parentesis_a = 16;
   public static final int For = 9;
   public static final int EOF = 0;
   public static final int P_coma = 23;
   public static final int error = 1;
+  public static final int Switch = 35;
   public static final int String_type = 30;
   public static final int Linea = 2;
-  public static final int Op_atribucion = 36;
+  public static final int Private = 33;
+  public static final int Op_atribucion = 49;
+  public static final int Println = 39;
   public static final int Do = 7;
   public static final int ERROR = 24;
+  public static final int Case = 36;
   public static final int Op_logico = 15;
   public static final int Public = 26;
-  public static final int Identificador = 33;
+  public static final int EndWhile = 34;
+  public static final int Identificador = 46;
   public static final int Resta = 12;
   public static final int Multiplicacion = 13;
-  public static final int Op_incremento = 37;
-  public static final int Numero = 31;
+  public static final int Op_incremento = 50;
+  public static final int Numero = 44;
   public static final int Suma = 11;
   public static final int Main = 22;
   public static final int Igual = 10;
@@ -79,6 +92,19 @@ public class sym {
   "Static",
   "Void",
   "String_type",
+  "Begin",
+  "End",
+  "Private",
+  "EndWhile",
+  "Switch",
+  "Case",
+  "Break",
+  "Default",
+  "Println",
+  "In",
+  "Then",
+  "Return",
+  "Coma",
   "Numero",
   "T_dato",
   "Identificador",

@@ -1,243 +1,480 @@
 package proyectofinalcompilador.CodigoObjeto;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
- * Generador de codigo objeto (MIPS simplificado).
+ * Genera codigo NASM x86_64 a partir de codigo intermedio de tres direcciones.
  */
 public class GeneradorObjeto {
 
-    private final StringBuilder assembly;
-    private final Set<String> variables;
-    private final Map<String, String> literalesCadena;
-    private int contadorCadenas;
+    private static final Pattern PATRON_SALTO_FALSO = Pattern.compile(
+            "^IF_FALSE\\s+(.+?)\\s+GOTO\\s+([A-Za-z_][A-Za-z0-9_]*)$",
+            Pattern.CASE_INSENSITIVE);
 
-    public GeneradorObjeto() {
-        assembly = new StringBuilder();
-        variables = new LinkedHashSet<>();
-        literalesCadena = new LinkedHashMap<>();
-        contadorCadenas = 0;
-    }
+    private static final Pattern PATRON_COMPARACION = Pattern.compile(
+            "^(.+?)\\s*(<=|>=|==|!=|<|>)\\s*(.+)$");
 
     public String generarCodigo(String codigoIntermedio) {
         if (codigoIntermedio == null || codigoIntermedio.trim().isEmpty()) {
-            return "";
+            return "; Sin codigo intermedio para traducir.";
         }
 
-        assembly.setLength(0);
-        variables.clear();
-        literalesCadena.clear();
-        contadorCadenas = 0;
+        List<String> instrucciones = separarInstrucciones(codigoIntermedio);
+        Set<String> variables = recolectarVariables(instrucciones);
+        Map<String, String> constantesDecimales = recolectarConstantesDecimales(instrucciones);
 
+        StringBuilder asm = new StringBuilder();
+        asm.append("; Codigo objeto generado en NASM x86_64\n");
+        asm.append("section .data\n");
+        if (variables.isEmpty()) {
+            asm.append("    _dummy dq 0\n");
+        } else {
+            for (String variable : variables) {
+                asm.append("    ").append(variable).append(" dq 0\n");
+            }
+        }
+        for (Map.Entry<String, String> entry : constantesDecimales.entrySet()) {
+            asm.append("    ").append(entry.getValue()).append(" dq ").append(entry.getKey()).append("\n");
+        }
+
+        asm.append("\nsection .text\n");
+        asm.append("    global _start\n\n");
+        asm.append("_start:\n");
+
+        for (String instruccion : instrucciones) {
+            traducirInstruccion(asm, instruccion, constantesDecimales);
+        }
+
+        asm.append("\n    ; exit(0)\n");
+        asm.append("    mov rax, 60\n");
+        asm.append("    xor rdi, rdi\n");
+        asm.append("    syscall\n");
+
+        return asm.toString();
+    }
+
+    private List<String> separarInstrucciones(String codigoIntermedio) {
         String[] lineas = codigoIntermedio.split("\\R");
+        List<String> instrucciones = new ArrayList<>();
         for (String linea : lineas) {
-            analizarLineaDatos(linea.trim());
+            String limpia = linea.trim();
+            if (!limpia.isEmpty()) {
+                instrucciones.add(limpia);
+            }
         }
-
-        escribirSeccionData();
-        escribirSeccionTexto(lineas);
-        return assembly.toString();
+        return instrucciones;
     }
 
-    private void analizarLineaDatos(String linea) {
-        if (linea.isEmpty()) {
-            return;
-        }
+    private Set<String> recolectarVariables(List<String> instrucciones) {
+        Set<String> variables = new LinkedHashSet<>();
 
-        if (linea.contains(" = ")) {
-            String[] partes = linea.split(" = ", 2);
-            variables.add(partes[0].trim());
-            registrarOperandos(partes[1].trim());
-            return;
-        }
-
-        if (linea.startsWith("READ ")) {
-            variables.add(linea.substring(5).trim());
-            return;
-        }
-
-        if (linea.startsWith("PRINT ")) {
-            registrarOperandos(linea.substring(6).trim());
-        }
-    }
-
-    private void registrarOperandos(String expr) {
-        if (expr.isEmpty()) {
-            return;
-        }
-
-        if (esLiteralCadena(expr)) {
-            registrarCadena(expr);
-            return;
-        }
-
-        String[] tokens = expr.split("\\s+");
-        for (String token : tokens) {
-            if (token.isEmpty() || esOperador(token) || esNumero(token)) {
+        for (String instruccion : instrucciones) {
+            if (instruccion.endsWith(":")) {
                 continue;
             }
-            if (esLiteralCadena(token)) {
-                registrarCadena(token);
+
+            if (instruccion.startsWith("IF_FALSE ")) {
+                Matcher m = PATRON_SALTO_FALSO.matcher(instruccion);
+                if (m.matches()) {
+                    agregarOperandosDeCondicion(variables, m.group(1));
+                }
                 continue;
             }
-            variables.add(token);
-        }
-    }
 
-    private void escribirSeccionData() {
-        assembly.append(".data\n");
-        assembly.append("    salto_linea: .asciiz \"\\n\"\n");
-
-        for (String var : variables) {
-            if (!esNumero(var) && !esLiteralCadena(var)) {
-                assembly.append("    ").append(var).append(": .word 0\n");
-            }
-        }
-
-        for (Map.Entry<String, String> entry : literalesCadena.entrySet()) {
-            assembly.append("    ").append(entry.getValue()).append(": .asciiz ").append(entry.getKey()).append("\n");
-        }
-    }
-
-    private void escribirSeccionTexto(String[] lineas) {
-        assembly.append("\n.text\n");
-        assembly.append(".globl main\n\n");
-        assembly.append("main:\n");
-
-        for (String raw : lineas) {
-            String linea = raw.trim();
-            if (linea.isEmpty()) {
+            if (instruccion.startsWith("GOTO ") || instruccion.startsWith("PARAM ")
+                    || instruccion.startsWith("CALL ")) {
                 continue;
             }
-            traducirLinea(linea);
-        }
 
-        assembly.append("\n    li $v0, 10\n");
-        assembly.append("    syscall\n");
-    }
-
-    private void traducirLinea(String linea) {
-        assembly.append("    # ").append(linea).append("\n");
-
-        if (linea.contains(" = ")) {
-            traducirAsignacion(linea);
-            return;
-        }
-
-        if (linea.startsWith("READ ")) {
-            String var = linea.substring(5).trim();
-            assembly.append("    li $v0, 5\n");
-            assembly.append("    syscall\n");
-            assembly.append("    sw $v0, ").append(var).append("\n");
-            return;
-        }
-
-        if (linea.startsWith("PRINT ")) {
-            traducirPrint(linea.substring(6).trim());
-            return;
-        }
-
-        if (linea.startsWith("PARAM ") || linea.startsWith("CALL ")) {
-            assembly.append("    # Compatibilidad con version anterior\n");
-        }
-    }
-
-    private void traducirAsignacion(String linea) {
-        String[] partes = linea.split(" = ", 2);
-        String destino = partes[0].trim();
-        String derecha = partes[1].trim();
-
-        String[] tokens = derecha.split("\\s+");
-        if (tokens.length == 3 && esOperador(tokens[1])) {
-            cargarEnRegistro(tokens[0], "$t0");
-            cargarEnRegistro(tokens[2], "$t1");
-            switch (tokens[1]) {
-                case "+":
-                    assembly.append("    add $t2, $t0, $t1\n");
-                    break;
-                case "-":
-                    assembly.append("    sub $t2, $t0, $t1\n");
-                    break;
-                case "*":
-                    assembly.append("    mul $t2, $t0, $t1\n");
-                    break;
-                case "/":
-                    assembly.append("    div $t0, $t1\n");
-                    assembly.append("    mflo $t2\n");
-                    break;
-                default:
-                    assembly.append("    # Operador no soportado: ").append(tokens[1]).append("\n");
-                    break;
+            if (instruccion.startsWith("PRINT ")) {
+                String op = instruccion.substring("PRINT ".length()).trim();
+                agregarSiVariable(variables, op);
+                continue;
             }
-            assembly.append("    sw $t2, ").append(destino).append("\n");
+
+            if (instruccion.startsWith("READ ")) {
+                String var = instruccion.substring("READ ".length()).trim();
+                agregarSiVariable(variables, var);
+                continue;
+            }
+
+            int igual = instruccion.indexOf('=');
+            if (igual < 0) {
+                continue;
+            }
+
+            String destino = instruccion.substring(0, igual).trim();
+            String expr = instruccion.substring(igual + 1).trim();
+
+            agregarSiVariable(variables, destino);
+            agregarOperandosDeExpresion(variables, expr);
+        }
+
+        return variables;
+    }
+
+    private Map<String, String> recolectarConstantesDecimales(List<String> instrucciones) {
+        Map<String, String> constantes = new LinkedHashMap<>();
+        Pattern patronDecimal = Pattern.compile("(?<![A-Za-z0-9_])-?\\d+\\.\\d+(?![A-Za-z0-9_])");
+
+        for (String instruccion : instrucciones) {
+            Matcher m = patronDecimal.matcher(instruccion);
+            while (m.find()) {
+                String numero = m.group();
+                if (!constantes.containsKey(numero)) {
+                    constantes.put(numero, "CONST_D" + (constantes.size() + 1));
+                }
+            }
+        }
+
+        return constantes;
+    }
+
+    private void traducirInstruccion(StringBuilder asm, String instruccion, Map<String, String> constantesDecimales) {
+        if (instruccion.endsWith(":")) {
+            asm.append(instruccion).append("\n");
             return;
         }
 
-        cargarEnRegistro(derecha, "$t0");
-        assembly.append("    sw $t0, ").append(destino).append("\n");
-    }
-
-    private void traducirPrint(String arg) {
-        if (esLiteralCadena(arg)) {
-            String label = registrarCadena(arg);
-            assembly.append("    la $a0, ").append(label).append("\n");
-            assembly.append("    li $v0, 4\n");
-            assembly.append("    syscall\n");
-        } else if (esNumero(arg)) {
-            assembly.append("    li $a0, ").append(valorEnteroMips(arg)).append("\n");
-            assembly.append("    li $v0, 1\n");
-            assembly.append("    syscall\n");
-        } else {
-            assembly.append("    lw $a0, ").append(arg).append("\n");
-            assembly.append("    li $v0, 1\n");
-            assembly.append("    syscall\n");
+        if (instruccion.startsWith("GOTO ")) {
+            String etiqueta = instruccion.substring("GOTO ".length()).trim();
+            asm.append("    jmp ").append(etiqueta).append("\n");
+            return;
         }
 
-        assembly.append("    la $a0, salto_linea\n");
-        assembly.append("    li $v0, 4\n");
-        assembly.append("    syscall\n");
+        if (instruccion.startsWith("IF_FALSE ")) {
+            traducirIfFalse(asm, instruccion, constantesDecimales);
+            return;
+        }
+
+        if (instruccion.startsWith("PRINT ")) {
+            asm.append("    ; ").append(instruccion).append(" (salida no implementada)\n");
+            return;
+        }
+
+        if (instruccion.startsWith("READ ")) {
+            asm.append("    ; ").append(instruccion).append(" (entrada no implementada)\n");
+            return;
+        }
+
+        if (instruccion.startsWith("PARAM ") || instruccion.startsWith("CALL ")) {
+            asm.append("    ; ").append(instruccion).append("\n");
+            return;
+        }
+
+        int igual = instruccion.indexOf('=');
+        if (igual < 0) {
+            asm.append("    ; Instruccion no reconocida: ").append(instruccion).append("\n");
+            return;
+        }
+
+        String destino = instruccion.substring(0, igual).trim();
+        String expr = instruccion.substring(igual + 1).trim();
+
+        String[] partes = separarOperacion(expr);
+        if (partes == null) {
+            cargarEnRegistro(asm, "rax", expr);
+            asm.append("    mov [").append(destino).append("], rax\n");
+            return;
+        }
+
+        String op1 = partes[0];
+        String operador = partes[1];
+        String op2 = partes[2];
+
+        cargarEnRegistro(asm, "rax", op1);
+        cargarEnRegistro(asm, "rbx", op2);
+
+        switch (operador) {
+            case "+":
+                asm.append("    add rax, rbx\n");
+                break;
+            case "-":
+                asm.append("    sub rax, rbx\n");
+                break;
+            case "*":
+                asm.append("    imul rax, rbx\n");
+                break;
+            case "/":
+                asm.append("    cqo\n");
+                asm.append("    idiv rbx\n");
+                break;
+            default:
+                asm.append("    ; Operador no soportado en: ").append(instruccion).append("\n");
+                return;
+        }
+
+        asm.append("    mov [").append(destino).append("], rax\n");
     }
 
-    private void cargarEnRegistro(String op, String reg) {
-        if (esNumero(op)) {
-            assembly.append("    li ").append(reg).append(", ").append(valorEnteroMips(op)).append("\n");
-        } else if (esLiteralCadena(op)) {
-            String label = registrarCadena(op);
-            assembly.append("    la ").append(reg).append(", ").append(label).append("\n");
-        } else {
-            assembly.append("    lw ").append(reg).append(", ").append(op).append("\n");
+    private void traducirIfFalse(StringBuilder asm, String instruccion, Map<String, String> constantesDecimales) {
+        Matcher salto = PATRON_SALTO_FALSO.matcher(instruccion);
+        if (!salto.matches()) {
+            asm.append("    ; IF_FALSE invalido: ").append(instruccion).append("\n");
+            return;
+        }
+
+        String condicion = limpiarParentesisExternos(salto.group(1).trim());
+        String etiqueta = salto.group(2).trim();
+
+        Matcher comparacion = PATRON_COMPARACION.matcher(condicion);
+        if (comparacion.matches()) {
+            String op1 = comparacion.group(1).trim();
+            String rel = comparacion.group(2).trim();
+            String op2 = comparacion.group(3).trim();
+
+            if (esComparacionDecimal(op1, op2)) {
+                traducirComparacionDecimal(asm, op1, rel, op2, etiqueta, constantesDecimales);
+                return;
+            }
+
+            cargarEnRegistro(asm, "rax", op1);
+            cargarEnRegistro(asm, "rbx", op2);
+            asm.append("    cmp rax, rbx\n");
+            asm.append("    ").append(jumpPorFalso(rel)).append(" ").append(etiqueta).append("\n");
+            return;
+        }
+
+        if ("false".equalsIgnoreCase(condicion)) {
+            asm.append("    jmp ").append(etiqueta).append("\n");
+            return;
+        }
+
+        if ("true".equalsIgnoreCase(condicion)) {
+            asm.append("    ; IF_FALSE true: no salta\n");
+            return;
+        }
+
+        cargarEnRegistro(asm, "rax", condicion);
+        asm.append("    cmp rax, 0\n");
+        asm.append("    je ").append(etiqueta).append("\n");
+    }
+
+    private void traducirComparacionDecimal(
+            StringBuilder asm, String op1, String rel, String op2, String etiqueta, Map<String, String> constantesDecimales) {
+        cargarEnXmmComoDouble(asm, "xmm0", op1, constantesDecimales);
+        cargarEnXmmComoDouble(asm, "xmm1", op2, constantesDecimales);
+        asm.append("    ucomisd xmm0, xmm1\n");
+
+        if ("==".equals(rel)) {
+            asm.append("    jp ").append(etiqueta).append("\n");
+            asm.append("    jne ").append(etiqueta).append("\n");
+            return;
+        }
+
+        switch (rel) {
+            case "<":
+                asm.append("    jae ").append(etiqueta).append("\n");
+                break;
+            case "<=":
+                asm.append("    ja ").append(etiqueta).append("\n");
+                break;
+            case ">":
+                asm.append("    jbe ").append(etiqueta).append("\n");
+                break;
+            case ">=":
+                asm.append("    jb ").append(etiqueta).append("\n");
+                break;
+            case "!=":
+                asm.append("    je ").append(etiqueta).append("\n");
+                break;
+            default:
+                asm.append("    ; Operador relacional no soportado: ").append(rel).append("\n");
+                asm.append("    jmp ").append(etiqueta).append("\n");
+                break;
         }
     }
 
-    private boolean esOperador(String token) {
-        return "+".equals(token) || "-".equals(token) || "*".equals(token) || "/".equals(token);
-    }
-
-    private boolean esNumero(String token) {
-        return token.matches("-?\\d+(\\.\\d+)?([eE][+-]?\\d+)?");
-    }
-
-    private boolean esLiteralCadena(String token) {
-        return token.length() >= 2 && token.startsWith("\"") && token.endsWith("\"");
-    }
-
-    private String registrarCadena(String literal) {
-        if (literalesCadena.containsKey(literal)) {
-            return literalesCadena.get(literal);
+    private String jumpPorFalso(String operadorRelacional) {
+        switch (operadorRelacional) {
+            case "<":
+                return "jge";
+            case "<=":
+                return "jg";
+            case ">":
+                return "jle";
+            case ">=":
+                return "jl";
+            case "==":
+                return "jne";
+            case "!=":
+                return "je";
+            default:
+                return "jne";
         }
-        String label = "str_" + (++contadorCadenas);
-        literalesCadena.put(literal, label);
-        return label;
     }
 
-    private String valorEnteroMips(String numero) {
-        if (numero.matches("-?\\d+")) {
-            return numero;
+    private void agregarOperandosDeCondicion(Set<String> variables, String condicion) {
+        String limpia = limpiarParentesisExternos(condicion.trim());
+
+        Matcher comp = PATRON_COMPARACION.matcher(limpia);
+        if (comp.matches()) {
+            agregarSiVariable(variables, comp.group(1).trim());
+            agregarSiVariable(variables, comp.group(3).trim());
+            return;
         }
-        int convertido = (int) Math.round(Double.parseDouble(numero));
-        return Integer.toString(convertido);
+
+        agregarSiVariable(variables, limpia);
+    }
+
+    private void agregarOperandosDeExpresion(Set<String> variables, String expr) {
+        String[] partes = separarOperacion(expr);
+        if (partes == null) {
+            agregarSiVariable(variables, expr.trim());
+            return;
+        }
+
+        agregarSiVariable(variables, partes[0]);
+        agregarSiVariable(variables, partes[2]);
+    }
+
+    private String[] separarOperacion(String expr) {
+        String[] ops = { " + ", " - ", " * ", " / " };
+        for (String op : ops) {
+            int idx = expr.indexOf(op);
+            if (idx > 0) {
+                String izquierda = expr.substring(0, idx).trim();
+                String derecha = expr.substring(idx + op.length()).trim();
+                if (!izquierda.isEmpty() && !derecha.isEmpty()) {
+                    return new String[] { izquierda, op.trim(), derecha };
+                }
+            }
+        }
+        return null;
+    }
+
+    private boolean esComparacionDecimal(String op1, String op2) {
+        return esDecimal(limpiarParentesisExternos(op1.trim()))
+                || esDecimal(limpiarParentesisExternos(op2.trim()));
+    }
+
+    private void cargarEnXmmComoDouble(
+            StringBuilder asm, String registroXmm, String operando, Map<String, String> constantesDecimales) {
+        String limpio = limpiarParentesisExternos(operando.trim());
+
+        if (esDecimal(limpio)) {
+            String etiquetaConstante = constantesDecimales.get(limpio);
+            if (etiquetaConstante == null) {
+                asm.append("    ; Decimal sin constante registrada: ").append(limpio).append("\n");
+                asm.append("    xorpd ").append(registroXmm).append(", ").append(registroXmm).append("\n");
+                return;
+            }
+            asm.append("    movsd ").append(registroXmm).append(", [").append(etiquetaConstante).append("]\n");
+            return;
+        }
+
+        if (esEntero(limpio)) {
+            asm.append("    mov rax, ").append(limpio).append("\n");
+            asm.append("    cvtsi2sd ").append(registroXmm).append(", rax\n");
+            return;
+        }
+
+        if ("true".equalsIgnoreCase(limpio) || "false".equalsIgnoreCase(limpio)) {
+            asm.append("    mov rax, ").append("true".equalsIgnoreCase(limpio) ? "1" : "0").append("\n");
+            asm.append("    cvtsi2sd ").append(registroXmm).append(", rax\n");
+            return;
+        }
+
+        asm.append("    mov rax, [").append(limpio).append("]\n");
+        asm.append("    cvtsi2sd ").append(registroXmm).append(", rax\n");
+    }
+
+    private void cargarEnRegistro(StringBuilder asm, String registro, String operando) {
+        String limpio = limpiarParentesisExternos(operando.trim());
+
+        if (esEntero(limpio)) {
+            asm.append("    mov ").append(registro).append(", ").append(limpio).append("\n");
+            return;
+        }
+
+        if (esDecimal(limpio)) {
+            long truncado = (long) Double.parseDouble(limpio);
+            asm.append("    ; Decimal ").append(limpio).append(" truncado a entero ").append(truncado).append("\n");
+            asm.append("    mov ").append(registro).append(", ").append(truncado).append("\n");
+            return;
+        }
+
+        if ("true".equalsIgnoreCase(limpio)) {
+            asm.append("    mov ").append(registro).append(", 1\n");
+            return;
+        }
+
+        if ("false".equalsIgnoreCase(limpio)) {
+            asm.append("    mov ").append(registro).append(", 0\n");
+            return;
+        }
+
+        asm.append("    mov ").append(registro).append(", [").append(limpio).append("]\n");
+    }
+
+    private void agregarSiVariable(Set<String> variables, String token) {
+        String limpio = limpiarParentesisExternos(token.trim());
+
+        if (limpio.isEmpty()) {
+            return;
+        }
+        if (esEntero(limpio) || esDecimal(limpio)) {
+            return;
+        }
+        String lower = limpio.toLowerCase(Locale.ROOT);
+        if ("true".equals(lower) || "false".equals(lower)) {
+            return;
+        }
+        if (limpio.startsWith("\"") && limpio.endsWith("\"") && limpio.length() >= 2) {
+            return;
+        }
+        if (!esIdentificadorValido(limpio)) {
+            return;
+        }
+
+        variables.add(limpio);
+    }
+
+    private boolean esIdentificadorValido(String token) {
+        return token.matches("[A-Za-z_][A-Za-z0-9_]*");
+    }
+
+    private boolean esEntero(String token) {
+        return token.matches("-?\\d+");
+    }
+
+    private boolean esDecimal(String token) {
+        return token.matches("-?\\d+\\.\\d+");
+    }
+
+    private String limpiarParentesisExternos(String texto) {
+        String actual = texto.trim();
+        while (actual.startsWith("(") && actual.endsWith(")") && actual.length() > 1) {
+            String interno = actual.substring(1, actual.length() - 1).trim();
+            if (!parentesisBalanceados(interno)) {
+                break;
+            }
+            actual = interno;
+        }
+        return actual;
+    }
+
+    private boolean parentesisBalanceados(String texto) {
+        int balance = 0;
+        for (int i = 0; i < texto.length(); i++) {
+            char c = texto.charAt(i);
+            if (c == '(') {
+                balance++;
+            } else if (c == ')') {
+                balance--;
+                if (balance < 0) {
+                    return false;
+                }
+            }
+        }
+        return balance == 0;
     }
 }

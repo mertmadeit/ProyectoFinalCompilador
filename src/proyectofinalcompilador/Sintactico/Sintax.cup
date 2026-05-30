@@ -84,6 +84,7 @@ non terminal String BLOQUE_BEGIN, LISTA_SENTENCIAS, LISTA_SENTENCIAS_OPC, SENTEN
 non terminal String DECLARACION, ASIGNACION, ASIGNADOR, CONTENIDO_PARENTESIS;
 non terminal String EXPRESION, TERMINO, FACTOR, TIPO_DATO;
 non terminal String SENTENCIA_IF, SENTENCIA_WHILE, CONDICION;
+non terminal Integer MARCA_CI;
 
 start with INICIO;
 
@@ -191,13 +192,27 @@ SENTENCIA ::=
 ;
 
 SENTENCIA_IF ::=
-    If Parentesis_a CONDICION:c Parentesis_c Then SENTENCIA:s {:
+    If Parentesis_a CONDICION:c Parentesis_c Then MARCA_CI:m SENTENCIA:s {:
+        String lfin = parser.getGenInter().nuevaEtiqueta();
+        parser.getGenInter().insertarSaltoCondicionalFalso(m, valorExpresion(c), lfin);
+        parser.getGenInter().agregarEtiqueta(lfin);
         RESULT = "If (" + textoExpresion(c) + ") then " + s;
     :}
     |
-    If Parentesis_a CONDICION:c Parentesis_c Then SENTENCIA:s1 Else SENTENCIA:s2 {:
+    If Parentesis_a CONDICION:c Parentesis_c Then MARCA_CI:m1 SENTENCIA:s1 Else MARCA_CI:m2 SENTENCIA:s2 {:
+        String lelse = parser.getGenInter().nuevaEtiqueta();
+        String lfin = parser.getGenInter().nuevaEtiqueta();
+        parser.getGenInter().insertarSaltoCondicionalFalso(m1, valorExpresion(c), lelse);
+        int m2Ajustada = m2 + 1;
+        parser.getGenInter().insertarSaltoIncondicional(m2Ajustada, lfin);
+        parser.getGenInter().insertarInstruccion(m2Ajustada + 1, lelse + ":");
+        parser.getGenInter().agregarEtiqueta(lfin);
         RESULT = "If (" + textoExpresion(c) + ") then " + s1 + " else " + s2;
     :}
+;
+
+MARCA_CI ::=
+    {: RESULT = Integer.valueOf(parser.getGenInter().tamanoInstrucciones()); :}
 ;
 
 SENTENCIA_WHILE ::=

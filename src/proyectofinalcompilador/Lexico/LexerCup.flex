@@ -12,7 +12,9 @@ import proyectofinalcompilador.Sintactico.sym;
 %column
 LETRA=[A-Za-z]
 DIGITO=[0-9]
-ID={LETRA}({LETRA}|{DIGITO})*
+ID={LETRA}({LETRA}|{DIGITO}|"_")*
+NUMERO_IDENT={DIGITO}+({LETRA}|"_")({LETRA}|{DIGITO}|"_")*
+REAL_IDENT=(({DIGITO}+"."{DIGITO}*)|("."{DIGITO}+))({LETRA}|"_")({LETRA}|{DIGITO}|"_")*
 ENTERO={DIGITO}+
 DECIMAL=({DIGITO}+"."{DIGITO}*)|("."{DIGITO}+)
 EXP=([eE][+-]?{DIGITO}+)
@@ -74,7 +76,7 @@ CADENA=\"([^\"\\\n]|\\.)*\"
 ("int") { return symbol(sym.Int, yytext()); }
 
 /* Tipos de datos solicitados y algunos existentes */
-("integer"|"float"|"char"|"varchar"|"boolean"|"byte"|"long"|"double") {
+("entero"|"real"|"integer"|"float"|"char"|"varchar"|"boolean"|"byte"|"long"|"double") {
     return symbol(sym.T_dato, yytext());
 }
 
@@ -139,10 +141,19 @@ CADENA=\"([^\"\\\n]|\\.)*\"
 (".") { return symbol(sym.Punto, yytext()); }
 
 /* Identificador */
-{ID} { return symbol(sym.Identificador, yytext()); }
+{ID} {
+    if (yytext().length() > 10) {
+        return symbol(sym.ERROR, yytext());
+    }
+    return symbol(sym.Identificador, yytext());
+}
 
 /* Numero (entero, decimal y notación científica) */
 {NUMERO} { return symbol(sym.Numero, yytext()); }
+
+/* Errores especificos del lexico */
+{REAL_IDENT} { return symbol(sym.ERROR, yytext()); }
+{NUMERO_IDENT} { return symbol(sym.ERROR, yytext()); }
 
 /* Error de analisis */
 . { return symbol(sym.ERROR, yytext()); }

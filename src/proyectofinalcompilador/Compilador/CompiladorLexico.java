@@ -39,8 +39,7 @@ public class CompiladorLexico {
                 int columna = symbol.right + 1;
 
                 if (symbol.sym == sym.ERROR) {
-                    errores.add("Error lexico en linea " + linea + ", columna " + columna
-                            + ": simbolo no reconocido '" + lexema + "'");
+                    errores.add(construirErrorLexico(lexema, linea, columna));
                 } else {
                     tokens.add(new TokenInfo(tokenType, lexema, linea));
                 }
@@ -51,6 +50,20 @@ public class CompiladorLexico {
             errores.add("Error de entrada/salida: " + e.getMessage());
             return false;
         }
+    }
+
+    private String construirErrorLexico(String lexema, int linea, int columna) {
+        String detalle = "simbolo no reconocido '" + lexema + "'";
+
+        if (lexema.matches("[A-Za-z][A-Za-z0-9_]{10,}")) {
+            detalle = "identificador excede la longitud maxima de 10 caracteres '" + lexema + "'";
+        } else if (lexema.matches("([0-9]+\\.[0-9]*|\\.[0-9]+)[A-Za-z_][A-Za-z0-9_]*")) {
+            detalle = "numero real mal formado o unido a identificador '" + lexema + "'";
+        } else if (lexema.matches("[0-9]+[A-Za-z_][A-Za-z0-9_]*")) {
+            detalle = "identificador no puede iniciar con numero '" + lexema + "'";
+        }
+
+        return "Error lexico en linea " + linea + ", columna " + columna + ": " + detalle;
     }
 
     private String obtenerNombreToken(int tokenCode) {

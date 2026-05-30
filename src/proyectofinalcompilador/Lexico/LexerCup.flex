@@ -19,6 +19,7 @@ EXP=([eE][+-]?{DIGITO}+)
 NUMERO=({DECIMAL}{EXP}?)|({ENTERO}{EXP}?)
 ESPACIO=[ \t\r\n\f]+
 COMENTARIO_LINEA=("//"[^\r\n]*)
+COMENTARIO_BLOQUE=("/*"([^*]|[\r\n]|"*"[^/])*"*/")
 CADENA=\"([^\"\\\n]|\\.)*\"
 %{
     private Symbol symbol(int type, Object value){
@@ -35,6 +36,7 @@ CADENA=\"([^\"\\\n]|\\.)*\"
 
 /* Comentarios */
 {COMENTARIO_LINEA} {/* Ignore */}
+{COMENTARIO_BLOQUE} {/* Ignore */}
 
 /* Comillas */
 ("\"") { return symbol(sym.Comillas, yytext()); }
@@ -45,6 +47,7 @@ CADENA=\"([^\"\\\n]|\\.)*\"
 /* Palabras reservadas mínimas solicitadas */
 ("begin") { return symbol(sym.Begin, yytext()); }
 ("end") { return symbol(sym.End, yytext()); }
+("endif") { return symbol(sym.End, yytext()); }
 ("main") { return symbol(sym.Main, yytext()); }
 ("public") { return symbol(sym.Public, yytext()); }
 ("private") { return symbol(sym.Private, yytext()); }
@@ -130,7 +133,7 @@ CADENA=\"([^\"\\\n]|\\.)*\"
 (",") { return symbol(sym.Coma, yytext()); }
 
 /* Dos puntos */
-(":") { return symbol(sym.P_coma, yytext()); }
+(":") { return symbol(sym.ERROR, yytext()); }
 
 /* Punto */
 (".") { return symbol(sym.Punto, yytext()); }

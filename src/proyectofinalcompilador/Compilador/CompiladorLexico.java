@@ -1,21 +1,21 @@
 package proyectofinalcompilador.Compilador;
 
-import proyectofinalcompilador.Lexico.LexerCup;
-import proyectofinalcompilador.Lexico.Tokens;
-import proyectofinalcompilador.Sintactico.sym;
-import java_cup.runtime.Symbol;
-import java.io.StringReader;
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 
+import java_cup.runtime.Symbol;
+import proyectofinalcompilador.Lexico.LexerCup;
+import proyectofinalcompilador.Sintactico.sym;
+
 /**
- * Compilador Léxico - Realiza el análisis léxico del código fuente
+ * Compilador lexico.
  */
 public class CompiladorLexico {
 
-    private List<TokenInfo> tokens;
-    private List<String> errores;
+    private final List<TokenInfo> tokens;
+    private final List<String> errores;
 
     public CompiladorLexico() {
         tokens = new ArrayList<>();
@@ -23,45 +23,36 @@ public class CompiladorLexico {
     }
 
     /**
-     * Realiza el análisis léxico del código fuente
-     * 
-     * @param codigoFuente Código a analizar
-     * @return true si el análisis fue exitoso, false si hay errores
+     * Ejecuta el analisis lexico del codigo fuente.
      */
     public boolean compilar(String codigoFuente) {
         tokens.clear();
         errores.clear();
 
         try {
-            StringReader reader = new StringReader(codigoFuente);
-            LexerCup lexer = new LexerCup(reader);
-
+            LexerCup lexer = new LexerCup(new StringReader(codigoFuente));
             Symbol symbol;
             while ((symbol = lexer.next_token()).sym != sym.EOF) {
                 String tokenType = obtenerNombreToken(symbol.sym);
-                String lexema = (String) symbol.value;
-                int linea = symbol.left + 1; // JFlex usa línea 0, hacemos que sea 1-based
+                String lexema = symbol.value == null ? "" : symbol.value.toString();
+                int linea = symbol.left + 1;
+                int columna = symbol.right + 1;
 
-                // Si es un error, agregamos a la lista de errores
                 if (symbol.sym == sym.ERROR) {
-                    errores.add("Error léxico en línea " + linea + ": símbolo no reconocido '" + lexema + "'");
+                    errores.add("Error lexico en linea " + linea + ", columna " + columna
+                            + ": simbolo no reconocido '" + lexema + "'");
                 } else {
                     tokens.add(new TokenInfo(tokenType, lexema, linea));
                 }
             }
-
             lexer.yyclose();
             return errores.isEmpty();
-
         } catch (IOException e) {
             errores.add("Error de entrada/salida: " + e.getMessage());
             return false;
         }
     }
 
-    /**
-     * Obtiene el nombre del token basado en su código
-     */
     private String obtenerNombreToken(int tokenCode) {
         switch (tokenCode) {
             case sym.Comillas:
@@ -71,7 +62,7 @@ public class CompiladorLexico {
             case sym.Int:
                 return "Int";
             case sym.Cadena:
-                return "String";
+                return "Cadena";
             case sym.If:
                 return "If";
             case sym.Else:
@@ -113,31 +104,31 @@ public class CompiladorLexico {
             case sym.Resta:
                 return "Resta";
             case sym.Multiplicacion:
-                return "Multiplicación";
+                return "Multiplicacion";
             case sym.Division:
-                return "División";
+                return "Division";
             case sym.Op_logico:
-                return "Operador Lógico";
+                return "Operador logico";
             case sym.Op_incremento:
-                return "Operador Incremento";
+                return "Operador incremento";
             case sym.Op_relacional:
-                return "Operador Relacional";
+                return "Operador relacional";
             case sym.Op_atribucion:
-                return "Operador Atribución";
+                return "Operador atribucion";
             case sym.Op_booleano:
-                return "Operador Booleano";
+                return "Booleano";
             case sym.Parentesis_a:
-                return "Paréntesis Apertura";
+                return "Parentesis apertura";
             case sym.Parentesis_c:
-                return "Paréntesis Cierre";
+                return "Parentesis cierre";
             case sym.Llave_a:
-                return "Llave Apertura";
+                return "Llave apertura";
             case sym.Llave_c:
-                return "Llave Cierre";
+                return "Llave cierre";
             case sym.Corchete_a:
-                return "Corchete Apertura";
+                return "Corchete apertura";
             case sym.Corchete_c:
-                return "Corchete Cierre";
+                return "Corchete cierre";
             case sym.Main:
                 return "Main";
             case sym.P_coma:
@@ -147,7 +138,7 @@ public class CompiladorLexico {
             case sym.Identificador:
                 return "Identificador";
             case sym.Numero:
-                return "Número";
+                return "Numero";
             case sym.Punto:
                 return "Punto";
             case sym.Public:
@@ -167,7 +158,6 @@ public class CompiladorLexico {
         }
     }
 
-    // Getters
     public List<TokenInfo> getTokens() {
         return tokens;
     }
@@ -181,12 +171,12 @@ public class CompiladorLexico {
     }
 
     /**
-     * Clase interna para guardar información del token
+     * Informacion de token.
      */
     public static class TokenInfo {
-        public String tipo;
-        public String lexema;
-        public int linea;
+        public final String tipo;
+        public final String lexema;
+        public final int linea;
 
         public TokenInfo(String tipo, String lexema, int linea) {
             this.tipo = tipo;

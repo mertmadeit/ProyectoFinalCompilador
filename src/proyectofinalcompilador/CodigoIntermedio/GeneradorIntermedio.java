@@ -36,6 +36,14 @@ public class GeneradorIntermedio {
         instrucciones.add("CALL " + funcion + ", 1");
     }
 
+    public void agregarImpresion(String valor) {
+        instrucciones.add("PRINT " + valor);
+    }
+
+    public void agregarLectura(String variable) {
+        instrucciones.add("READ " + variable);
+    }
+
     public String getCodigoCompleto() {
         StringBuilder sb = new StringBuilder();
         for (String inst : instrucciones) {

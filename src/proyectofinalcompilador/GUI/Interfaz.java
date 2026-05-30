@@ -4,7 +4,8 @@
  */
 package proyectofinalcompilador.GUI;
 
-import proyectofinalcompilador.Compilador.CompiladorLexico;
+import proyectofinalcompilador.MVC.controller.CompiladorController;
+import proyectofinalcompilador.MVC.model.ResultadoCompilacion;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.JOptionPane;
 
@@ -12,16 +13,92 @@ import javax.swing.JOptionPane;
  *
  * @author MERT
  */
+@SuppressWarnings({ "serial", "this-escape" })
 public class Interfaz extends javax.swing.JFrame {
+        private static final long serialVersionUID = 1L;
 
         private static final java.util.logging.Logger logger = java.util.logging.Logger
                         .getLogger(Interfaz.class.getName());
+        private javax.swing.JTable tableTokensLista;
+        private DefaultTableModel modeloTokensLista;
+        private DefaultTableModel modeloSimbolosLista;
+        private javax.swing.JTextArea textAreaProducciones;
+        private javax.swing.JTextArea textAreaPila;
+        private final CompiladorController controlador;
 
         /**
          * Creates new form Interfaz
          */
         public Interfaz() {
+                controlador = new CompiladorController();
                 initComponents();
+                inicializarTablaTokensLista();
+                inicializarVistaAnalizador();
+                jTabbedPane1.setSelectedIndex(1);
+        }
+
+        private void inicializarTablaTokensLista() {
+                modeloTokensLista = new DefaultTableModel(new Object[] { "Token" }, 0) {
+                        @Override
+                        public boolean isCellEditable(int row, int column) {
+                                return false;
+                        }
+                };
+
+                tableTokensLista = new javax.swing.JTable(modeloTokensLista);
+                tableTokensLista.setTableHeader(null);
+                tableTokensLista.setRowSelectionAllowed(false);
+                tableTokensLista.setFocusable(false);
+                javax.swing.JScrollPane scrollTokensLista = new javax.swing.JScrollPane(tableTokensLista);
+                jTabbedPane1.insertTab("Tabla de Tokens", null, scrollTokensLista, null, 0);
+        }
+
+        private void inicializarVistaAnalizador() {
+                javax.swing.JPanel panelVista = new javax.swing.JPanel(new java.awt.GridLayout(2, 2, 8, 8));
+                panelVista.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 8, 8, 8));
+
+                javax.swing.JTable tablaTokensVista = new javax.swing.JTable(modeloTokensLista);
+                tablaTokensVista.setTableHeader(null);
+                tablaTokensVista.setRowSelectionAllowed(false);
+                javax.swing.JScrollPane scrollTokensVista = new javax.swing.JScrollPane(tablaTokensVista);
+                javax.swing.JPanel panelTokens = new javax.swing.JPanel(new java.awt.BorderLayout());
+                panelTokens.setBorder(javax.swing.BorderFactory.createTitledBorder("Tabla de Tokens"));
+                panelTokens.add(scrollTokensVista, java.awt.BorderLayout.CENTER);
+
+                modeloSimbolosLista = new DefaultTableModel(new Object[] { "Simbolo" }, 0) {
+                        @Override
+                        public boolean isCellEditable(int row, int column) {
+                                return false;
+                        }
+                };
+                javax.swing.JTable tablaSimbolosVista = new javax.swing.JTable(modeloSimbolosLista);
+                tablaSimbolosVista.setTableHeader(null);
+                tablaSimbolosVista.setRowSelectionAllowed(false);
+                javax.swing.JScrollPane scrollSimbolosVista = new javax.swing.JScrollPane(tablaSimbolosVista);
+                javax.swing.JPanel panelSimbolos = new javax.swing.JPanel(new java.awt.BorderLayout());
+                panelSimbolos.setBorder(javax.swing.BorderFactory.createTitledBorder("Tabla de Simbolos"));
+                panelSimbolos.add(scrollSimbolosVista, java.awt.BorderLayout.CENTER);
+
+                textAreaProducciones = new javax.swing.JTextArea();
+                textAreaProducciones.setEditable(false);
+                javax.swing.JScrollPane scrollProducciones = new javax.swing.JScrollPane(textAreaProducciones);
+                javax.swing.JPanel panelProducciones = new javax.swing.JPanel(new java.awt.BorderLayout());
+                panelProducciones.setBorder(javax.swing.BorderFactory.createTitledBorder("Producciones Utilizadas"));
+                panelProducciones.add(scrollProducciones, java.awt.BorderLayout.CENTER);
+
+                textAreaPila = new javax.swing.JTextArea();
+                textAreaPila.setEditable(false);
+                javax.swing.JScrollPane scrollPila = new javax.swing.JScrollPane(textAreaPila);
+                javax.swing.JPanel panelPila = new javax.swing.JPanel(new java.awt.BorderLayout());
+                panelPila.setBorder(javax.swing.BorderFactory.createTitledBorder("Estado de la pila"));
+                panelPila.add(scrollPila, java.awt.BorderLayout.CENTER);
+
+                panelVista.add(panelTokens);
+                panelVista.add(panelSimbolos);
+                panelVista.add(panelProducciones);
+                panelVista.add(panelPila);
+
+                jTabbedPane1.insertTab("Vista analizador", null, panelVista, null, 1);
         }
 
         /**
@@ -357,76 +434,92 @@ public class Interfaz extends javax.swing.JFrame {
         }// </editor-fold>//GEN-END:initComponents
 
         private void MenuItemNuevoActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_MenuItemNuevoActionPerformed
-                // TODO add your handling code here:
+                TextAreaEditor.setText("");
+                TextAreaSalida.setText("");
+                TextAreaSintactico.setText("");
+                TextAreaCodigoIntermedio.setText("");
+                TextAreaCodigoObjeto.setText("");
+                ((DefaultTableModel) TableLexico.getModel()).setRowCount(0);
+                ((DefaultTableModel) TableSemantico.getModel()).setRowCount(0);
+                if (modeloTokensLista != null) {
+                        modeloTokensLista.setRowCount(0);
+                }
+                if (modeloSimbolosLista != null) {
+                        modeloSimbolosLista.setRowCount(0);
+                }
+                if (textAreaProducciones != null) {
+                        textAreaProducciones.setText("");
+                }
+                if (textAreaPila != null) {
+                        textAreaPila.setText("");
+                }
         }// GEN-LAST:event_MenuItemNuevoActionPerformed
 
         private void MenuItemCompilarActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_MenuItemCompilarActionPerformed
-                // Obtener el código del editor
                 String codigoFuente = TextAreaEditor.getText();
-
                 if (codigoFuente.trim().isEmpty()) {
                         JOptionPane.showMessageDialog(this, "Por favor ingrese código para compilar",
                                         "Advertencia", JOptionPane.WARNING_MESSAGE);
                         return;
                 }
 
-                // Realizar compilación léxica
-                CompiladorLexico compiladorLex = new CompiladorLexico();
-                boolean exitoLex = compiladorLex.compilar(codigoFuente);
-
-                // Limpiar tablas y áreas
                 DefaultTableModel modeloLexico = (DefaultTableModel) TableLexico.getModel();
                 modeloLexico.setRowCount(0);
                 TextAreaSintactico.setText("");
+                if (modeloTokensLista != null) {
+                        modeloTokensLista.setRowCount(0);
+                }
+                if (modeloSimbolosLista != null) {
+                        modeloSimbolosLista.setRowCount(0);
+                }
+                if (textAreaProducciones != null) {
+                        textAreaProducciones.setText("");
+                }
+                if (textAreaPila != null) {
+                        textAreaPila.setText("");
+                }
 
-                // Llenar tabla con tokens
-                for (CompiladorLexico.TokenInfo token : compiladorLex.getTokens()) {
+                ResultadoCompilacion resultado = controlador.compilar(codigoFuente);
+
+                for (proyectofinalcompilador.Compilador.CompiladorLexico.TokenInfo token : resultado.tokens) {
                         Object[] fila = { token.tipo, token.lexema, String.valueOf(token.linea) };
                         modeloLexico.addRow(fila);
                 }
 
-                // Realizar compilación sintáctica y semántica
-                proyectofinalcompilador.Compilador.CompiladorSintactico compiladorSintax = new proyectofinalcompilador.Compilador.CompiladorSintactico();
-                boolean exitoSintax = compiladorSintax.analizar(codigoFuente);
+                for (String tokenVisual : resultado.tokensVisuales) {
+                        modeloTokensLista.addRow(new Object[] { tokenVisual });
+                }
 
-                // Llenar tabla semántica
+                if (modeloSimbolosLista != null) {
+                        for (String simbolo : resultado.simbolosVisuales) {
+                                modeloSimbolosLista.addRow(new Object[] { simbolo });
+                        }
+                }
+
                 DefaultTableModel modeloSemantico = (DefaultTableModel) TableSemantico.getModel();
                 modeloSemantico.setRowCount(0);
-                for (proyectofinalcompilador.Semantico.Simbolo simb : compiladorSintax.getTablaSimbolos()
-                                .getSimbolos()) {
+                for (proyectofinalcompilador.Semantico.Simbolo simb : resultado.simbolosSemanticos) {
                         Object[] fila = { simb.getNombre(), simb.getTipo(), simb.getValor(), simb.getAlcance() };
                         modeloSemantico.addRow(fila);
                 }
 
-                // Mostrar resultados
-                if (exitoLex && exitoSintax) {
-                        TextAreaSalida.setText("Compilación completada exitosamente.\n" +
-                                        "Tokens encontrados: " + compiladorLex.getTokens().size());
-                        TextAreaSintactico.setText(compiladorSintax.getResultado());
-                        TextAreaCodigoIntermedio.setText(compiladorSintax.getCodigoIntermedio());
-                        TextAreaCodigoObjeto.setText(compiladorSintax.getCodigoObjeto());
+                TextAreaSalida.setText(resultado.salida);
+                TextAreaSintactico.setText(resultado.exitoSintacticoSemantico ? resultado.resultadoSintactico
+                                : resultado.errorSintacticoSemantico);
+
+                if (resultado.exitoGeneral()) {
+                        TextAreaCodigoIntermedio.setText(resultado.codigoIntermedio);
+                        TextAreaCodigoObjeto.setText(resultado.codigoObjeto);
                 } else {
                         TextAreaCodigoIntermedio.setText("");
                         TextAreaCodigoObjeto.setText("");
-                        StringBuilder mensajeError = new StringBuilder();
-                        if (!exitoLex) {
-                                mensajeError.append("Errores léxicos:\n");
-                                for (String err : compiladorLex.getErrores()) {
-                                        mensajeError.append("• ").append(err).append("\n");
-                                }
-                        }
-                        if (!exitoSintax) {
-                                // Aquí se muestran tanto errores sintácticos como semánticos
-                                String err = compiladorSintax.getError();
-                                if (err.contains("Error semántico")) {
-                                        mensajeError.append("\nErrores semánticos:\n");
-                                } else {
-                                        mensajeError.append("\nErrores sintácticos:\n");
-                                }
-                                mensajeError.append("• ").append(err).append("\n");
-                                TextAreaSintactico.setText(err);
-                        }
-                        TextAreaSalida.setText(mensajeError.toString());
+                }
+
+                if (textAreaProducciones != null) {
+                        textAreaProducciones.setText(resultado.produccionesUtilizadas);
+                }
+                if (textAreaPila != null) {
+                        textAreaPila.setText(resultado.estadoPila);
                 }
         }// GEN-LAST:event_MenuItemCompilarActionPerformed
 
@@ -498,3 +591,4 @@ public class Interfaz extends javax.swing.JFrame {
         public javax.swing.JTabbedPane jTabbedPane1;
         // End of variables declaration//GEN-END:variables
 }
+

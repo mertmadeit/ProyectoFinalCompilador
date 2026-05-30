@@ -1,43 +1,39 @@
 package proyectofinalcompilador.Semantico;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
- * Tabla de Símbolos para el análisis semántico
+ * Tabla de simbolos para el analisis semantico.
  */
 public class TablaSimbolos {
-    private List<Simbolo> simbolos;
-    private List<String> errores; // Errores semánticos
+    private final Map<String, Simbolo> simbolosPorNombre;
+    private final List<String> errores;
 
     public TablaSimbolos() {
-        simbolos = new ArrayList<>();
+        simbolosPorNombre = new LinkedHashMap<>();
         errores = new ArrayList<>();
     }
 
     /**
-     * Agrega un nuevo símbolo a la tabla.
-     * Verifica redeclaraciones.
+     * Agrega un nuevo simbolo a la tabla y valida redeclaraciones.
      */
     public void agregar(Simbolo s) {
-        if (buscar(s.getNombre()) != null) {
-            errores.add("Error semántico en línea " + s.getLinea() + ": La variable '" + s.getNombre()
-                    + "' ya ha sido declarada.");
-        } else {
-            simbolos.add(s);
+        if (simbolosPorNombre.containsKey(s.getNombre())) {
+            errores.add("Error semantico en linea " + s.getLinea()
+                    + ": La variable '" + s.getNombre() + "' ya ha sido declarada.");
+            return;
         }
+        simbolosPorNombre.put(s.getNombre(), s);
     }
 
     /**
-     * Busca un símbolo por nombre.
+     * Busca un simbolo por nombre.
      */
     public Simbolo buscar(String nombre) {
-        for (Simbolo s : simbolos) {
-            if (s.getNombre().equals(nombre)) {
-                return s;
-            }
-        }
-        return null;
+        return simbolosPorNombre.get(nombre);
     }
 
     /**
@@ -45,12 +41,26 @@ public class TablaSimbolos {
      */
     public void verificarExistencia(String nombre, int linea) {
         if (buscar(nombre) == null) {
-            errores.add("Error semántico en línea " + linea + ": La variable '" + nombre + "' no ha sido declarada.");
+            errores.add("Error semantico en linea " + linea
+                    + ": La variable '" + nombre + "' no ha sido declarada.");
         }
     }
 
+    /**
+     * Actualiza el valor de un simbolo declarado.
+     */
+    public void asignarValor(String nombre, String valor, int linea) {
+        Simbolo simbolo = buscar(nombre);
+        if (simbolo == null) {
+            errores.add("Error semantico en linea " + linea
+                    + ": La variable '" + nombre + "' no ha sido declarada.");
+            return;
+        }
+        simbolo.setValor(valor);
+    }
+
     public List<Simbolo> getSimbolos() {
-        return simbolos;
+        return new ArrayList<>(simbolosPorNombre.values());
     }
 
     public List<String> getErrores() {
@@ -58,7 +68,7 @@ public class TablaSimbolos {
     }
 
     public void limpiar() {
-        simbolos.clear();
+        simbolosPorNombre.clear();
         errores.clear();
     }
 }

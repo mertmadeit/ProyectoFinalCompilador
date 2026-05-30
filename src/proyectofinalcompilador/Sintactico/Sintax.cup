@@ -49,165 +49,264 @@ parser code
     public proyectofinalcompilador.CodigoIntermedio.GeneradorIntermedio getGenInter() {
         return this.genInter;
     }
+
+    private String[] descomponerExpresion(String expr) {
+        int idx = expr.lastIndexOf("::::");
+        if (idx == -1) return new String[] { expr, expr };
+        return new String[] { expr.substring(0, idx), expr.substring(idx + 4) };
+    }
+
+    private String textoExpresion(String expr) {
+        return descomponerExpresion(expr)[0];
+    }
+
+    private String valorExpresion(String expr) {
+        return descomponerExpresion(expr)[1];
+    }
+
+    private String valorPorDefecto(String tipo) {
+        String t = tipo.toLowerCase();
+        if ("boolean".equals(t)) return "false";
+        if ("char".equals(t) || "varchar".equals(t)) return "\"\"";
+        return "0";
+    }
 :};
 
 terminal Linea, Comillas, Int, If, Else, Do, While, For,
     Igual, Suma, Resta, Multiplicacion, Division, Op_logico,
-    Parentesis_a, Parentesis_c, Llave_a, Llave_c, Corchete_a, Corchete_c, 
+    Parentesis_a, Parentesis_c, Llave_a, Llave_c, Corchete_a, Corchete_c,
     Main, P_coma, ERROR, Punto, Public, Class, Static, Void, String_type,
     Begin, End, Private, EndWhile, Switch, Case, Break, Default, Println, In, Then, Return, Coma;
 terminal String Numero, T_dato, Identificador, Op_relacional, Op_booleano, Op_atribucion, Op_incremento, Cadena;
 
-non terminal String INICIO, PROGRAMA, CLASE, METODO, PARAMETROS, SENTENCIA, CONTENIDO_PARENTESIS, LISTA_SENTENCIAS, DECLARACION, EXPRESION, TERMINO, FACTOR;
+non terminal String INICIO, PROGRAMA, CLASE, METODO, PARAMETROS_OPC, PARAMETROS;
+non terminal String BLOQUE_BEGIN, LISTA_SENTENCIAS, LISTA_SENTENCIAS_OPC, SENTENCIA;
+non terminal String DECLARACION, ASIGNACION, ASIGNADOR, CONTENIDO_PARENTESIS;
+non terminal String EXPRESION, TERMINO, FACTOR, TIPO_DATO;
+non terminal String SENTENCIA_IF, SENTENCIA_WHILE, CONDICION;
 
 start with INICIO;
 
-INICIO ::= 
+INICIO ::=
     PROGRAMA:p {: RESULT = p; parser.setResultado(p); :}
 ;
 
-PROGRAMA ::= 
-    CLASE:c {: RESULT = "Arbol Sintáctico:\n" + c; :}
+PROGRAMA ::=
+    CLASE:c {: RESULT = "Arbol Sintactico:\n" + c; :}
+    |
+    BLOQUE_BEGIN:b {: RESULT = "Arbol Sintactico:\n" + b; :}
 ;
 
-CLASE ::= 
-    Public Class Identificador:id Llave_a METODO:m Llave_c {: 
-        RESULT = "└── Clase: " + id + "\n    " + m.replace("\n", "\n    "); 
-    :} |
-    Class Identificador:id Llave_a METODO:m Llave_c {: 
-        RESULT = "└── Clase: " + id + "\n    " + m.replace("\n", "\n    "); 
+CLASE ::=
+    Public Class Identificador:id Llave_a METODO:m Llave_c {:
+        RESULT = "Clase " + id + "\n  " + m.replace("\n", "\n  ");
+    :}
+    |
+    Class Identificador:id Llave_a METODO:m Llave_c {:
+        RESULT = "Clase " + id + "\n  " + m.replace("\n", "\n  ");
     :}
 ;
 
-METODO ::= 
-    Public Static Void Main Parentesis_a PARAMETROS:p Parentesis_c Llave_a LISTA_SENTENCIAS:s Llave_c {: 
-        RESULT = "└── Método: main(" + p + ")\n    └── Cuerpo:\n        " + s.replace("\n", "\n        "); 
-    :} |
-    Public Static Void Main Parentesis_a Parentesis_c Llave_a LISTA_SENTENCIAS:s Llave_c {: 
-        RESULT = "└── Método: main()\n    └── Cuerpo:\n        " + s.replace("\n", "\n        "); 
-    :} |
-    Void Main Parentesis_a PARAMETROS:p Parentesis_c Llave_a LISTA_SENTENCIAS:s Llave_c {: 
-        RESULT = "└── Método: main(" + p + ")\n    └── Cuerpo:\n        " + s.replace("\n", "\n        "); 
+METODO ::=
+    Public Static Void Main Parentesis_a PARAMETROS_OPC:p Parentesis_c Llave_a LISTA_SENTENCIAS_OPC:s Llave_c {:
+        RESULT = "Metodo main(" + p + ")\n  Cuerpo:\n    " + (s.isEmpty() ? "<vacio>" : s.replace("\n", "\n    "));
     :}
+    |
+    Void Main Parentesis_a PARAMETROS_OPC:p Parentesis_c Llave_a LISTA_SENTENCIAS_OPC:s Llave_c {:
+        RESULT = "Metodo main(" + p + ")\n  Cuerpo:\n    " + (s.isEmpty() ? "<vacio>" : s.replace("\n", "\n    "));
+    :}
+;
+
+PARAMETROS_OPC ::=
+    PARAMETROS:p {: RESULT = p; :}
+    |
+    /* vacio */ {: RESULT = ""; :}
 ;
 
 PARAMETROS ::=
-    String_type Corchete_a Corchete_c Identificador:id {: 
+    String_type Corchete_a Corchete_c Identificador:id {:
         parser.getTabla().agregar(new proyectofinalcompilador.Semantico.Simbolo(id, "String[]", "null", "local", idleft + 1));
-        RESULT = "String[] " + id; 
-    :} |
-    String_type Identificador:id Corchete_a Corchete_c {: 
+        RESULT = "String[] " + id;
+    :}
+    |
+    String_type Identificador:id Corchete_a Corchete_c {:
         parser.getTabla().agregar(new proyectofinalcompilador.Semantico.Simbolo(id, "String[]", "null", "local", idleft + 1));
-        RESULT = "String " + id + "[]"; 
-    :} |
-    String_type Identificador:id {: 
+        RESULT = "String[] " + id;
+    :}
+    |
+    String_type Identificador:id {:
         parser.getTabla().agregar(new proyectofinalcompilador.Semantico.Simbolo(id, "String", "null", "local", idleft + 1));
-        RESULT = "String " + id; 
-    :} |
-    Identificador:t Identificador:id {: 
-        parser.getTabla().agregar(new proyectofinalcompilador.Semantico.Simbolo(id, t, "null", "local", idleft + 1));
-        RESULT = t + " " + id; 
+        RESULT = "String " + id;
     :}
 ;
 
-LISTA_SENTENCIAS ::= 
-    LISTA_SENTENCIAS:ls SENTENCIA:s {: RESULT = ls + "\n" + s; :} |
+BLOQUE_BEGIN ::=
+    Begin LISTA_SENTENCIAS_OPC:s End {:
+        RESULT = "begin\n" + (s.isEmpty() ? "  <vacio>\n" : "  " + s.replace("\n", "\n  ") + "\n") + "end";
+    :}
+;
+
+LISTA_SENTENCIAS_OPC ::=
+    LISTA_SENTENCIAS:s {: RESULT = s; :}
+    |
+    /* vacio */ {: RESULT = ""; :}
+;
+
+LISTA_SENTENCIAS ::=
+    LISTA_SENTENCIAS:ls SENTENCIA:s {: RESULT = ls + "\n" + s; :}
+    |
     SENTENCIA:s {: RESULT = s; :}
 ;
 
-SENTENCIA ::= 
-    DECLARACION:d P_coma {: RESULT = d; :} |
-    Identificador:id P_coma {: 
+SENTENCIA ::=
+    DECLARACION:d P_coma {: RESULT = d; :}
+    |
+    ASIGNACION:a P_coma {: RESULT = a; :}
+    |
+    Identificador:id Op_incremento:op P_coma {:
         parser.getTabla().verificarExistencia(id, idleft + 1);
-        RESULT = "└── Sentencia: " + id; 
-    :} |
-    Identificador:id Punto Identificador:p1 Punto Identificador:p2 Parentesis_a CONTENIDO_PARENTESIS:cp Parentesis_c P_coma {:
+        parser.getGenInter().agregarOperacion(id, id, op.startsWith("+") ? "+" : "-", "1");
+        parser.getTabla().asignarValor(id, id + " " + (op.startsWith("+") ? "+ 1" : "- 1"), idleft + 1);
+        RESULT = "Incremento: " + id + op;
+    :}
+    |
+    Println Parentesis_a CONTENIDO_PARENTESIS:cp Parentesis_c P_coma {:
+        parser.getGenInter().agregarImpresion(valorExpresion(cp));
+        RESULT = "Salida: println(" + textoExpresion(cp) + ")";
+    :}
+    |
+    In Parentesis_a Identificador:id Parentesis_c P_coma {:
         parser.getTabla().verificarExistencia(id, idleft + 1);
-        String cpVal = cp;
-        if (cp.contains("::::")) cpVal = cp.split("::::")[1];
-        parser.getGenInter().agregarLlamada(id + "." + p1 + "." + p2, cpVal);
-        RESULT = "└── Llamada: " + id + "." + p1 + "." + p2 + "(" + (cp.contains("::::") ? cp.split("::::")[0] : cp) + ")";
+        parser.getGenInter().agregarLectura(id);
+        RESULT = "Entrada: in(" + id + ")";
+    :}
+    |
+    SENTENCIA_IF:si {: RESULT = si; :}
+    |
+    SENTENCIA_WHILE:sw {: RESULT = sw; :}
+    |
+    BLOQUE_BEGIN:b {: RESULT = b; :}
+    |
+    Return P_coma {: RESULT = "Return"; :}
+;
+
+SENTENCIA_IF ::=
+    If Parentesis_a CONDICION:c Parentesis_c Then SENTENCIA:s {:
+        RESULT = "If (" + textoExpresion(c) + ") then " + s;
+    :}
+    |
+    If Parentesis_a CONDICION:c Parentesis_c Then SENTENCIA:s1 Else SENTENCIA:s2 {:
+        RESULT = "If (" + textoExpresion(c) + ") then " + s1 + " else " + s2;
+    :}
+;
+
+SENTENCIA_WHILE ::=
+    While Parentesis_a CONDICION:c Parentesis_c Do SENTENCIA:s EndWhile {:
+        RESULT = "While (" + textoExpresion(c) + ") do " + s + " endwhile";
     :}
 ;
 
 DECLARACION ::=
-    Int Identificador:id {: 
-        parser.getTabla().agregar(new proyectofinalcompilador.Semantico.Simbolo(id, "int", "0", "local", idleft + 1));
-        parser.getGenInter().agregarAsignacion(id, "0");
-        RESULT = "└── Declaración: int " + id; 
-    :} |
-    Int Identificador:id Igual EXPRESION:e {: 
-        String[] parts = e.split("::::");
-        parser.getTabla().agregar(new proyectofinalcompilador.Semantico.Simbolo(id, "int", parts[0], "local", idleft + 1));
-        parser.getGenInter().agregarAsignacion(id, parts[1]);
-        RESULT = "└── Declaración: int " + id + " = " + parts[0]; 
-    :} |
-    T_dato:t Identificador:id Igual EXPRESION:e {: 
-        String[] parts = e.split("::::");
-        parser.getTabla().agregar(new proyectofinalcompilador.Semantico.Simbolo(id, t, parts[0], "local", idleft + 1));
-        parser.getGenInter().agregarAsignacion(id, parts[1]);
-        RESULT = "└── Declaración: " + t + " " + id + " = " + parts[0]; 
-    :} |
-    T_dato:t Identificador:id {: 
-        parser.getTabla().agregar(new proyectofinalcompilador.Semantico.Simbolo(id, t, "null", "local", idleft + 1));
-        RESULT = "└── Declaración: " + t + " " + id; 
+    TIPO_DATO:t Identificador:id {:
+        String def = valorPorDefecto(t);
+        parser.getTabla().agregar(new proyectofinalcompilador.Semantico.Simbolo(id, t, def, "local", idleft + 1));
+        parser.getGenInter().agregarAsignacion(id, def);
+        RESULT = "Declaracion: " + t + " " + id;
+    :}
+    |
+    TIPO_DATO:t Identificador:id ASIGNADOR:a EXPRESION:e {:
+        parser.getTabla().agregar(new proyectofinalcompilador.Semantico.Simbolo(id, t, textoExpresion(e), "local", idleft + 1));
+        parser.getGenInter().agregarAsignacion(id, valorExpresion(e));
+        RESULT = "Declaracion: " + t + " " + id + " " + a + " " + textoExpresion(e);
     :}
 ;
 
+ASIGNACION ::=
+    Identificador:id ASIGNADOR:a EXPRESION:e {:
+        parser.getTabla().verificarExistencia(id, idleft + 1);
+        parser.getTabla().asignarValor(id, textoExpresion(e), idleft + 1);
+        parser.getGenInter().agregarAsignacion(id, valorExpresion(e));
+        RESULT = "Asignacion: " + id + " " + a + " " + textoExpresion(e);
+    :}
+;
+
+ASIGNADOR ::=
+    Igual {: RESULT = "="; :}
+    |
+    Op_atribucion:oa {: RESULT = oa; :}
+;
+
+TIPO_DATO ::=
+    Int {: RESULT = "int"; :}
+    |
+    T_dato:t {: RESULT = t; :}
+    |
+    String_type {: RESULT = "String"; :}
+;
+
+CONDICION ::=
+    EXPRESION:e1 Op_relacional:op EXPRESION:e2 {:
+        RESULT = textoExpresion(e1) + " " + op + " " + textoExpresion(e2) + "::::" + valorExpresion(e1) + " " + op + " " + valorExpresion(e2);
+    :}
+    |
+    Op_booleano:b {: RESULT = b + "::::" + b; :}
+    |
+    Parentesis_a CONDICION:c Parentesis_c {: RESULT = "(" + textoExpresion(c) + ")::::(" + valorExpresion(c) + ")"; :}
+;
+
 EXPRESION ::=
-    EXPRESION:e1 Suma TERMINO:t1 {: 
-        String[] p1 = e1.split("::::");
-        String[] p2 = t1.split("::::");
+    EXPRESION:e1 Suma TERMINO:t1 {:
         String temp = parser.getGenInter().nuevaTemporal();
-        parser.getGenInter().agregarOperacion(temp, p1[1], "+", p2[1]);
-        RESULT = p1[0] + " + " + p2[0] + "::::" + temp; 
-    :} |
-    EXPRESION:e1 Resta TERMINO:t1 {: 
-        String[] p1 = e1.split("::::");
-        String[] p2 = t1.split("::::");
+        parser.getGenInter().agregarOperacion(temp, valorExpresion(e1), "+", valorExpresion(t1));
+        RESULT = textoExpresion(e1) + " + " + textoExpresion(t1) + "::::" + temp;
+    :}
+    |
+    EXPRESION:e1 Resta TERMINO:t1 {:
         String temp = parser.getGenInter().nuevaTemporal();
-        parser.getGenInter().agregarOperacion(temp, p1[1], "-", p2[1]);
-        RESULT = p1[0] + " - " + p2[0] + "::::" + temp; 
-    :} |
+        parser.getGenInter().agregarOperacion(temp, valorExpresion(e1), "-", valorExpresion(t1));
+        RESULT = textoExpresion(e1) + " - " + textoExpresion(t1) + "::::" + temp;
+    :}
+    |
     TERMINO:t1 {: RESULT = t1; :}
 ;
 
 TERMINO ::=
-    TERMINO:t1 Multiplicacion FACTOR:f1 {: 
-        String[] p1 = t1.split("::::");
-        String[] p2 = f1.split("::::");
+    TERMINO:t1 Multiplicacion FACTOR:f1 {:
         String temp = parser.getGenInter().nuevaTemporal();
-        parser.getGenInter().agregarOperacion(temp, p1[1], "*", p2[1]);
-        RESULT = p1[0] + " * " + p2[0] + "::::" + temp; 
-    :} |
-    TERMINO:t1 Division FACTOR:f1 {: 
-        String[] p1 = t1.split("::::");
-        String[] p2 = f1.split("::::");
+        parser.getGenInter().agregarOperacion(temp, valorExpresion(t1), "*", valorExpresion(f1));
+        RESULT = textoExpresion(t1) + " * " + textoExpresion(f1) + "::::" + temp;
+    :}
+    |
+    TERMINO:t1 Division FACTOR:f1 {:
         String temp = parser.getGenInter().nuevaTemporal();
-        parser.getGenInter().agregarOperacion(temp, p1[1], "/", p2[1]);
-        RESULT = p1[0] + " / " + p2[0] + "::::" + temp; 
-    :} |
+        parser.getGenInter().agregarOperacion(temp, valorExpresion(t1), "/", valorExpresion(f1));
+        RESULT = textoExpresion(t1) + " / " + textoExpresion(f1) + "::::" + temp;
+    :}
+    |
     FACTOR:f1 {: RESULT = f1; :}
 ;
 
 FACTOR ::=
-    Numero:n {: RESULT = n + "::::" + n; :} |
-    Identificador:id {: 
+    Numero:n {: RESULT = n + "::::" + n; :}
+    |
+    Resta Numero:n {: RESULT = "-" + n + "::::-" + n; :}
+    |
+    Identificador:id {:
         parser.getTabla().verificarExistencia(id, idleft + 1);
-        RESULT = id + "::::" + id; 
-    :} |
-    Parentesis_a EXPRESION:e Parentesis_c {: 
-        String[] p = e.split("::::");
-        RESULT = "(" + p[0] + ")::::" + p[1]; 
+        RESULT = id + "::::" + id;
+    :}
+    |
+    Parentesis_a EXPRESION:e Parentesis_c {:
+        RESULT = "(" + textoExpresion(e) + ")::::" + valorExpresion(e);
     :}
 ;
 
-CONTENIDO_PARENTESIS ::= 
-    Cadena:c {: RESULT = "\"" + c + "\"::::\"" + c + "\""; :} |
-    Cadena:c Suma EXPRESION:e {: 
-        String[] p = e.split("::::");
-        RESULT = "\"" + c + "\" + " + p[0] + "::::\"" + c + "\" + " + p[1]; 
-    :} |
-    EXPRESION:e {: RESULT = e; :} |
-    /* vacio */ {: RESULT = ""; :}
+CONTENIDO_PARENTESIS ::=
+    Cadena:c {: RESULT = "\"" + c + "\"::::\"" + c + "\""; :}
+    |
+    Cadena:c Suma EXPRESION:e {:
+        RESULT = "\"" + c + "\" + " + textoExpresion(e) + "::::\"" + c + "\" + " + valorExpresion(e);
+    :}
+    |
+    EXPRESION:e {: RESULT = e; :}
 ;

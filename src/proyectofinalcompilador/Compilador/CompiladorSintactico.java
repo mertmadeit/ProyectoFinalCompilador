@@ -1,13 +1,14 @@
 package proyectofinalcompilador.Compilador;
 
-import proyectofinalcompilador.Lexico.LexerCup;
-import proyectofinalcompilador.Sintactico.sintax;
-import proyectofinalcompilador.Semantico.TablaSimbolos;
-import proyectofinalcompilador.CodigoIntermedio.GeneradorIntermedio;
 import java.io.StringReader;
 
+import proyectofinalcompilador.CodigoObjeto.GeneradorObjeto;
+import proyectofinalcompilador.Lexico.LexerCup;
+import proyectofinalcompilador.Semantico.TablaSimbolos;
+import proyectofinalcompilador.Sintactico.sintax;
+
 /**
- * Compilador Sintáctico y Semántico - Realiza el análisis del código fuente
+ * Compilador sintactico y semantico.
  */
 public class CompiladorSintactico {
 
@@ -26,71 +27,82 @@ public class CompiladorSintactico {
     }
 
     /**
-     * Realiza el análisis sintáctico, semántico e intermedio del código fuente
-     * 
-     * @param codigoFuente Código a analizar
-     * @return true si el análisis fue exitoso, false si hay errores
+     * Analiza codigo fuente y construye resultado sintactico, tabla semantica y
+     * codigo intermedio/objeto.
      */
+    @SuppressWarnings("deprecation")
     public boolean analizar(String codigoFuente) {
-        sintax s = new sintax(new LexerCup(new StringReader(codigoFuente)));
+        resultado = "";
+        error = "";
+        codigoIntermedio = "";
+        codigoObjeto = "";
+        tablaSimbolos = new TablaSimbolos();
+
+        sintax parser = new sintax(new LexerCup(new StringReader(codigoFuente)));
 
         try {
-            System.out.println("Iniciando análisis sintáctico...");
-            java_cup.runtime.Symbol sres = s.parse();
-            tablaSimbolos = s.getTabla();
-            codigoIntermedio = s.getGenInter().getCodigoCompleto();
+            java_cup.runtime.Symbol parseResult = parser.parse();
+            tablaSimbolos = parser.getTabla();
 
-            // Generar Código Objeto
-            proyectofinalcompilador.CodigoObjeto.GeneradorObjeto genObj = new proyectofinalcompilador.CodigoObjeto.GeneradorObjeto();
-            codigoObjeto = genObj.generarCodigo(codigoIntermedio);
-
-            Object rawRes = s.getResultado();
-            if (rawRes == null && sres != null) {
-                rawRes = sres.value;
-            }
-
-            System.out.println("Análisis completado. rawRes: " + (rawRes != null ? "no nulo" : "nulo"));
-
-            if (rawRes != null) {
-                String strRes = rawRes.toString();
-                // Usamos una división más segura para evitar problemas con regex
-                int index = strRes.lastIndexOf("::::");
-                if (index != -1) {
-                    resultado = strRes.substring(0, index);
+            if (parser.hayError()) {
+                java_cup.runtime.Symbol simboloError = parser.getS();
+                if (simboloError != null) {
+                    int linea = simboloError.left + 1;
+                    int columna = simboloError.right + 1;
+                    String lexema = simboloError.value != null ? simboloError.value.toString() : "EOF";
+                    error = "Error sintactico en linea " + linea + ", columna " + columna
+                            + ": token inesperado '" + lexema + "'";
                 } else {
-                    resultado = strRes;
+                    error = "Error sintactico: no se pudo determinar el token causante.";
                 }
-            } else {
-                resultado = "Error: El árbol no pudo ser generado.";
-            }
-
-            System.out.println("Resultado final preparado. Longitud: " + resultado.length());
-
-            // Si hay errores semánticos, los agregamos
-            if (!tablaSimbolos.getErrores().isEmpty()) {
-                StringBuilder semanticErrors = new StringBuilder();
-                for (String err : tablaSimbolos.getErrores()) {
-                    semanticErrors.append(err).append("\n");
-                }
-                error = semanticErrors.toString();
                 return false;
             }
 
+            Object rawResult = parser.getResultado();
+            if (rawResult == null && parseResult != null) {
+                rawResult = parseResult.value;
+            }
+
+            if (rawResult != null) {
+                resultado = limpiarResultado(rawResult.toString());
+            } else {
+                resultado = "Analisis finalizado sin arbol sintactico.";
+            }
+
+            if (!tablaSimbolos.getErrores().isEmpty()) {
+                StringBuilder sb = new StringBuilder();
+                for (String err : tablaSimbolos.getErrores()) {
+                    sb.append(err).append('\n');
+                }
+                error = sb.toString().trim();
+                return false;
+            }
+
+            codigoIntermedio = parser.getGenInter().getCodigoCompleto();
+            GeneradorObjeto generadorObjeto = new GeneradorObjeto();
+            codigoObjeto = generadorObjeto.generarCodigo(codigoIntermedio);
             return true;
         } catch (Exception e) {
-            java_cup.runtime.Symbol sym = s.getS();
-            if (sym != null) {
-                int linea = sym.left + 1;
-                int columna = sym.right + 1;
-                String lexema = (sym.value != null) ? sym.value.toString() : "EOF";
-                error = "Error sintáctico en línea " + linea + ", columna " + columna + ": Token inesperado '" + lexema
-                        + "'";
+            java_cup.runtime.Symbol simboloError = parser.getS();
+            if (simboloError != null) {
+                int linea = simboloError.left + 1;
+                int columna = simboloError.right + 1;
+                String lexema = simboloError.value != null ? simboloError.value.toString() : "EOF";
+                error = "Error sintactico en linea " + linea + ", columna " + columna
+                        + ": token inesperado '" + lexema + "'";
             } else {
-                error = "Error crítico: " + e.getMessage();
-                e.printStackTrace();
+                error = "Error critico durante el analisis: " + e.getMessage();
             }
             return false;
         }
+    }
+
+    private String limpiarResultado(String raw) {
+        int index = raw.lastIndexOf("::::");
+        if (index == -1) {
+            return raw;
+        }
+        return raw.substring(0, index);
     }
 
     public String getResultado() {

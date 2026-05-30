@@ -1,2 +1,8 @@
 /build/
 /dist/
+/out/
+/_compile_test/
+/_testrun/
+*.class
+*.log
+*.tmp

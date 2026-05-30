@@ -14,7 +14,7 @@ public class Generador {
     public static void main(String[] args) throws Exception {
         String ruta1 = "src/proyectofinalcompilador/Lexico/LexerCup.flex";
         String ruta2 = "src/proyectofinalcompilador/Sintactico/Sintax.cup";
-        String[] rutaS = { "-parser", "sintax", "-package", "proyectofinalcompilador.Sintactico", ruta2 };
+        String[] rutaS = { "-parser", "sintax", "-expect", "1", "-package", "proyectofinalcompilador.Sintactico", ruta2 };
         generar(ruta1, ruta2, rutaS);
     }
 

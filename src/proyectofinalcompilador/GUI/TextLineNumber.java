@@ -6,8 +6,10 @@ import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.text.*;
 
+@SuppressWarnings({ "serial", "this-escape" })
 public class TextLineNumber extends JPanel
         implements CaretListener, DocumentListener {
+    private static final long serialVersionUID = 1L;
 
     private final JTextArea textArea;
 

@@ -73,7 +73,7 @@ CADENA=\"([^\"\\\n]|\\.)*\"
 ("class") { return symbol(sym.Class, yytext()); }
 ("static") { return symbol(sym.Static, yytext()); }
 ("String") { return symbol(sym.String_type, yytext()); }
-("int") { return symbol(sym.Int, yytext()); }
+("int"|"INT") { return symbol(sym.Int, yytext()); }
 
 /* Tipos de datos solicitados y algunos existentes */
 ("entero"|"real"|"integer"|"float"|"char"|"varchar"|"boolean"|"byte"|"long"|"double") {
@@ -135,7 +135,7 @@ CADENA=\"([^\"\\\n]|\\.)*\"
 (",") { return symbol(sym.Coma, yytext()); }
 
 /* Dos puntos */
-(":") { return symbol(sym.ERROR, yytext()); }
+(":") { return symbol(sym.DosPuntos, yytext()); }
 
 /* Punto */
 (".") { return symbol(sym.Punto, yytext()); }

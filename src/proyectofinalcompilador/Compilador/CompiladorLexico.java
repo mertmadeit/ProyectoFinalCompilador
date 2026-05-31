@@ -148,6 +148,8 @@ public class CompiladorLexico {
                 return "Punto y coma";
             case sym.Coma:
                 return "Coma";
+            case sym.DosPuntos:
+                return "Dos puntos";
             case sym.Identificador:
                 return "Identificador";
             case sym.Numero:

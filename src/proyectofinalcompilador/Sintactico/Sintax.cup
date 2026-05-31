@@ -76,7 +76,7 @@ terminal Linea, Comillas, Int, If, Else, Do, While, For,
     Igual, Suma, Resta, Multiplicacion, Division, Op_logico,
     Parentesis_a, Parentesis_c, Llave_a, Llave_c, Corchete_a, Corchete_c,
     Main, P_coma, ERROR, Punto, Public, Class, Static, Void, String_type,
-    Begin, End, Private, EndWhile, Switch, Case, Break, Default, Println, In, Then, Return, Coma;
+    Begin, End, Private, EndWhile, Switch, Case, Break, Default, Println, In, Then, Return, Coma, DosPuntos;
 terminal String Numero, T_dato, Identificador, Op_relacional, Op_booleano, Op_atribucion, Op_incremento, Cadena;
 
 non terminal String INICIO, PROGRAMA, CLASE, METODO, PARAMETROS_OPC, PARAMETROS;
@@ -84,6 +84,7 @@ non terminal String BLOQUE_BEGIN, BLOQUE_LLAVES, LISTA_SENTENCIAS, LISTA_SENTENC
 non terminal String DECLARACION, ASIGNACION, ASIGNADOR, CONTENIDO_PARENTESIS;
 non terminal String EXPRESION, TERMINO, FACTOR, TIPO_DATO, VALOR;
 non terminal String SENTENCIA_IF, SENTENCIA_WHILE, CONDICION, THEN_OPC;
+non terminal String SENTENCIA_SWITCH, CASOS_SWITCH_OPC, CASOS_SWITCH, CASO_SWITCH, DEFAULT_SWITCH_OPC;
 non terminal Integer MARCA_CI;
 
 start with INICIO;
@@ -190,15 +191,59 @@ SENTENCIA ::=
         RESULT = "Entrada: in(" + id + ")";
     :}
     |
+    Break P_coma {: RESULT = "Break"; :}
+    |
     SENTENCIA_IF:si {: RESULT = si; :}
     |
     SENTENCIA_WHILE:sw {: RESULT = sw; :}
+    |
+    SENTENCIA_SWITCH:ss {: RESULT = ss; :}
     |
     BLOQUE_BEGIN:b {: RESULT = b; :}
     |
     BLOQUE_LLAVES:b {: RESULT = b; :}
     |
+    Return VALOR:v P_coma {: RESULT = "Return " + textoExpresion(v); :}
+    |
     Return P_coma {: RESULT = "Return"; :}
+;
+
+SENTENCIA_SWITCH ::=
+    Switch Parentesis_a EXPRESION:e Parentesis_c Llave_a CASOS_SWITCH_OPC:cs DEFAULT_SWITCH_OPC:d Llave_c {:
+        String casos = cs.isEmpty() ? "" : "  " + cs.replace("\n", "\n  ") + "\n";
+        String porDefecto = d.isEmpty() ? "" : "  " + d.replace("\n", "\n  ") + "\n";
+        RESULT = "Switch (" + textoExpresion(e) + ") {\n" + casos + porDefecto + "}";
+    :}
+;
+
+CASOS_SWITCH_OPC ::=
+    CASOS_SWITCH:cs {: RESULT = cs; :}
+    |
+    /* vacio */ {: RESULT = ""; :}
+;
+
+CASOS_SWITCH ::=
+    CASOS_SWITCH:cs CASO_SWITCH:c {:
+        RESULT = cs + "\n" + c;
+    :}
+    |
+    CASO_SWITCH:c {: RESULT = c; :}
+;
+
+CASO_SWITCH ::=
+    Case VALOR:v DosPuntos LISTA_SENTENCIAS_OPC:s {:
+        String cuerpo = s.isEmpty() ? "  <vacio>" : "  " + s.replace("\n", "\n  ");
+        RESULT = "Case " + textoExpresion(v) + ":\n" + cuerpo;
+    :}
+;
+
+DEFAULT_SWITCH_OPC ::=
+    Default DosPuntos LISTA_SENTENCIAS_OPC:s {:
+        String cuerpo = s.isEmpty() ? "  <vacio>" : "  " + s.replace("\n", "\n  ");
+        RESULT = "Default:\n" + cuerpo;
+    :}
+    |
+    /* vacio */ {: RESULT = ""; :}
 ;
 
 SENTENCIA_IF ::=

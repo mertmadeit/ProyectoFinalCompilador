@@ -80,10 +80,10 @@ terminal Linea, Comillas, Int, If, Else, Do, While, For,
 terminal String Numero, T_dato, Identificador, Op_relacional, Op_booleano, Op_atribucion, Op_incremento, Cadena;
 
 non terminal String INICIO, PROGRAMA, CLASE, METODO, PARAMETROS_OPC, PARAMETROS;
-non terminal String BLOQUE_BEGIN, LISTA_SENTENCIAS, LISTA_SENTENCIAS_OPC, SENTENCIA;
+non terminal String BLOQUE_BEGIN, BLOQUE_LLAVES, LISTA_SENTENCIAS, LISTA_SENTENCIAS_OPC, SENTENCIA;
 non terminal String DECLARACION, ASIGNACION, ASIGNADOR, CONTENIDO_PARENTESIS;
 non terminal String EXPRESION, TERMINO, FACTOR, TIPO_DATO, VALOR;
-non terminal String SENTENCIA_IF, SENTENCIA_WHILE, CONDICION;
+non terminal String SENTENCIA_IF, SENTENCIA_WHILE, CONDICION, THEN_OPC;
 non terminal Integer MARCA_CI;
 
 start with INICIO;
@@ -147,6 +147,14 @@ BLOQUE_BEGIN ::=
     :}
 ;
 
+BLOQUE_LLAVES ::=
+    Llave_a LISTA_SENTENCIAS_OPC:s Llave_c {:
+        RESULT = "{\n  "
+                + (s.isEmpty() ? "<vacio>" : s.replace("\n", "\n  "))
+                + "\n}";
+    :}
+;
+
 LISTA_SENTENCIAS_OPC ::=
     LISTA_SENTENCIAS:s {: RESULT = s; :}
     |
@@ -188,18 +196,20 @@ SENTENCIA ::=
     |
     BLOQUE_BEGIN:b {: RESULT = b; :}
     |
+    BLOQUE_LLAVES:b {: RESULT = b; :}
+    |
     Return P_coma {: RESULT = "Return"; :}
 ;
 
 SENTENCIA_IF ::=
-    If Parentesis_a CONDICION:c Parentesis_c Then MARCA_CI:m SENTENCIA:s {:
+    If Parentesis_a CONDICION:c Parentesis_c THEN_OPC MARCA_CI:m SENTENCIA:s {:
         String lfin = parser.getGenInter().nuevaEtiqueta();
         parser.getGenInter().insertarSaltoCondicionalFalso(m, valorExpresion(c), lfin);
         parser.getGenInter().agregarEtiqueta(lfin);
-        RESULT = "If (" + textoExpresion(c) + ") then " + s;
+        RESULT = "If (" + textoExpresion(c) + ") " + s;
     :}
     |
-    If Parentesis_a CONDICION:c Parentesis_c Then MARCA_CI:m1 SENTENCIA:s1 Else MARCA_CI:m2 SENTENCIA:s2 {:
+    If Parentesis_a CONDICION:c Parentesis_c THEN_OPC MARCA_CI:m1 SENTENCIA:s1 Else MARCA_CI:m2 SENTENCIA:s2 {:
         String lelse = parser.getGenInter().nuevaEtiqueta();
         String lfin = parser.getGenInter().nuevaEtiqueta();
         parser.getGenInter().insertarSaltoCondicionalFalso(m1, valorExpresion(c), lelse);
@@ -207,8 +217,19 @@ SENTENCIA_IF ::=
         parser.getGenInter().insertarSaltoIncondicional(m2Ajustada, lfin);
         parser.getGenInter().insertarInstruccion(m2Ajustada + 1, lelse + ":");
         parser.getGenInter().agregarEtiqueta(lfin);
-        RESULT = "If (" + textoExpresion(c) + ") then " + s1 + " else " + s2;
+        RESULT = "If (" + textoExpresion(c) + ") " + s1 + " else " + s2;
     :}
+    |
+    If Parentesis_a Identificador:id Parentesis_c THEN_OPC SENTENCIA:s {:
+        parser.getTabla().verificarExistencia(id, idleft + 1);
+        RESULT = "If (" + id + ") " + s;
+    :}
+;
+
+THEN_OPC ::=
+    Then
+    |
+    /* vacio */
 ;
 
 MARCA_CI ::=
@@ -288,6 +309,10 @@ TIPO_DATO ::=
 CONDICION ::=
     EXPRESION:e1 Op_relacional:op EXPRESION:e2 {:
         RESULT = textoExpresion(e1) + " " + op + " " + textoExpresion(e2) + "::::" + valorExpresion(e1) + " " + op + " " + valorExpresion(e2);
+    :}
+    |
+    EXPRESION:e1 Igual EXPRESION:e2 {:
+        RESULT = textoExpresion(e1) + " = " + textoExpresion(e2) + "::::" + valorExpresion(e1) + " == " + valorExpresion(e2);
     :}
     |
     Op_booleano:b {: RESULT = b + "::::" + b; :}

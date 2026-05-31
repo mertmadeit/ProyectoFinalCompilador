@@ -82,7 +82,7 @@ terminal String Numero, T_dato, Identificador, Op_relacional, Op_booleano, Op_at
 non terminal String INICIO, PROGRAMA, CLASE, METODO, PARAMETROS_OPC, PARAMETROS;
 non terminal String BLOQUE_BEGIN, LISTA_SENTENCIAS, LISTA_SENTENCIAS_OPC, SENTENCIA;
 non terminal String DECLARACION, ASIGNACION, ASIGNADOR, CONTENIDO_PARENTESIS;
-non terminal String EXPRESION, TERMINO, FACTOR, TIPO_DATO;
+non terminal String EXPRESION, TERMINO, FACTOR, TIPO_DATO, VALOR;
 non terminal String SENTENCIA_IF, SENTENCIA_WHILE, CONDICION;
 non terminal Integer MARCA_CI;
 
@@ -219,6 +219,24 @@ SENTENCIA_WHILE ::=
     While Parentesis_a CONDICION:c Parentesis_c Do SENTENCIA:s EndWhile {:
         RESULT = "While (" + textoExpresion(c) + ") do " + s + " endwhile";
     :}
+    |
+    While Parentesis_a Identificador:id Parentesis_c Do SENTENCIA:s EndWhile {:
+        parser.getTabla().verificarExistencia(id, idleft + 1);
+        RESULT = "While (" + id + ") do " + s + " endwhile";
+    :}
+    |
+    While Parentesis_a CONDICION:c Parentesis_c Llave_a LISTA_SENTENCIAS_OPC:s Llave_c {:
+        RESULT = "While (" + textoExpresion(c) + ") {\n  "
+                + (s.isEmpty() ? "<vacio>" : s.replace("\n", "\n  "))
+                + "\n}";
+    :}
+    |
+    While Parentesis_a Identificador:id Parentesis_c Llave_a LISTA_SENTENCIAS_OPC:s Llave_c {:
+        parser.getTabla().verificarExistencia(id, idleft + 1);
+        RESULT = "While (" + id + ") {\n  "
+                + (s.isEmpty() ? "<vacio>" : s.replace("\n", "\n  "))
+                + "\n}";
+    :}
 ;
 
 DECLARACION ::=
@@ -229,20 +247,28 @@ DECLARACION ::=
         RESULT = "Declaracion: " + t + " " + id;
     :}
     |
-    TIPO_DATO:t Identificador:id ASIGNADOR:a EXPRESION:e {:
-        parser.getTabla().agregar(new proyectofinalcompilador.Semantico.Simbolo(id, t, textoExpresion(e), "local", idleft + 1));
-        parser.getGenInter().agregarAsignacion(id, valorExpresion(e));
-        RESULT = "Declaracion: " + t + " " + id + " " + a + " " + textoExpresion(e);
+    TIPO_DATO:t Identificador:id ASIGNADOR:a VALOR:v {:
+        parser.getTabla().agregar(new proyectofinalcompilador.Semantico.Simbolo(id, t, textoExpresion(v), "local", idleft + 1));
+        parser.getGenInter().agregarAsignacion(id, valorExpresion(v));
+        RESULT = "Declaracion: " + t + " " + id + " " + a + " " + textoExpresion(v);
     :}
 ;
 
 ASIGNACION ::=
-    Identificador:id ASIGNADOR:a EXPRESION:e {:
+    Identificador:id ASIGNADOR:a VALOR:e {:
         parser.getTabla().verificarExistencia(id, idleft + 1);
         parser.getTabla().asignarValor(id, textoExpresion(e), idleft + 1);
         parser.getGenInter().agregarAsignacion(id, valorExpresion(e));
         RESULT = "Asignacion: " + id + " " + a + " " + textoExpresion(e);
     :}
+;
+
+VALOR ::=
+    EXPRESION:e {: RESULT = e; :}
+    |
+    Op_booleano:b {: RESULT = b + "::::" + b; :}
+    |
+    Cadena:c {: RESULT = "\"" + c + "\"::::\"" + c + "\""; :}
 ;
 
 ASIGNADOR ::=

@@ -46,39 +46,31 @@ CADENA=\"([^\"\\\n]|\\.)*\"
 /* Texto entre comillas */
 {CADENA} { return symbol(sym.Cadena, yytext().substring(1, yytext().length()-1)); }
 
-/* Palabras reservadas mínimas solicitadas */
+/* Palabras reservadas del compilador */
 ("begin") { return symbol(sym.Begin, yytext()); }
 ("end") { return symbol(sym.End, yytext()); }
 ("endif") { return symbol(sym.End, yytext()); }
-("main") { return symbol(sym.Main, yytext()); }
+("java3") { return symbol(sym.Main, yytext()); }
 ("public") { return symbol(sym.Public, yytext()); }
 ("private") { return symbol(sym.Private, yytext()); }
 ("void") { return symbol(sym.Void, yytext()); }
-("if") { return symbol(sym.If, yytext()); }
-("else") { return symbol(sym.Else, yytext()); }
-("for") { return symbol(sym.For, yytext()); }
+("si") { return symbol(sym.If, yytext()); }
+("either") { return symbol(sym.Else, yytext()); }
+("repeat") { return symbol(sym.For, yytext()); }
 ("do") { return symbol(sym.Do, yytext()); }
 ("while") { return symbol(sym.While, yytext()); }
 ("endwhile") { return symbol(sym.EndWhile, yytext()); }
-("switch") { return symbol(sym.Switch, yytext()); }
-("case") { return symbol(sym.Case, yytext()); }
-("break") { return symbol(sym.Break, yytext()); }
-("default") { return symbol(sym.Default, yytext()); }
+("select") { return symbol(sym.Switch, yytext()); }
+("op") { return symbol(sym.Case, yytext()); }
+("__") { return symbol(sym.Break, yytext()); }
+("defu") { return symbol(sym.Default, yytext()); }
 ("println") { return symbol(sym.Println, yytext()); }
 ("in") { return symbol(sym.In, yytext()); }
 ("then") { return symbol(sym.Then, yytext()); }
-("return") { return symbol(sym.Return, yytext()); }
-
-/* Compatibilidad con la gramática actual del proyecto */
-("class") { return symbol(sym.Class, yytext()); }
-("static") { return symbol(sym.Static, yytext()); }
-("String") { return symbol(sym.String_type, yytext()); }
-("int"|"INT") { return symbol(sym.Int, yytext()); }
-
-/* Tipos de datos solicitados y algunos existentes */
-("entero"|"real"|"integer"|"float"|"char"|"varchar"|"boolean"|"byte"|"long"|"double") {
-    return symbol(sym.T_dato, yytext());
-}
+("ret") { return symbol(sym.Return, yytext()); }
+("template") { return symbol(sym.Class, yytext()); }
+("constant") { return symbol(sym.Static, yytext()); }
+("text") { return symbol(sym.String_type, yytext()); }
 
 /* Operadores logicos */
 ("&&"|"||"|"!"|"&"|"|") { return symbol(sym.Op_logico, yytext()); }
@@ -91,9 +83,6 @@ CADENA=\"([^\"\\\n]|\\.)*\"
 
 /* Operadores Incremento y decremento */
 ("++"|"--") { return symbol(sym.Op_incremento, yytext()); }
-
-/*Operadores Booleanos*/
-("true"|"false") { return symbol(sym.Op_booleano, yytext()); }
 
 /* Operador Igual */
 ("=") { return symbol(sym.Igual, yytext()); }

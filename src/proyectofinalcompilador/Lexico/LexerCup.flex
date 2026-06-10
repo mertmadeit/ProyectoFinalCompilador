@@ -46,7 +46,7 @@ CADENA=\"([^\"\\\n]|\\.)*\"
 /* Texto entre comillas */
 {CADENA} { return symbol(sym.Cadena, yytext().substring(1, yytext().length()-1)); }
 
-/* Palabras reservadas del compilador */
+/* Palabras reservadas definidas para el lenguaje */
 ("begin") { return symbol(sym.Begin, yytext()); }
 ("end") { return symbol(sym.End, yytext()); }
 ("endif") { return symbol(sym.End, yytext()); }
@@ -71,6 +71,15 @@ CADENA=\"([^\"\\\n]|\\.)*\"
 ("template") { return symbol(sym.Class, yytext()); }
 ("constant") { return symbol(sym.Static, yytext()); }
 ("text") { return symbol(sym.String_type, yytext()); }
+
+/* Tipos de datos soportados */
+("int"|"INT") { return symbol(sym.Int, yytext()); }
+("entero"|"real"|"integer"|"float"|"char"|"varchar"|"boolean"|"byte"|"long"|"double") {
+    return symbol(sym.T_dato, yytext());
+}
+
+/* Valores booleanos */
+("true"|"false") { return symbol(sym.Op_booleano, yytext()); }
 
 /* Operadores logicos */
 ("&&"|"||"|"!"|"&"|"|") { return symbol(sym.Op_logico, yytext()); }
@@ -117,8 +126,8 @@ CADENA=\"([^\"\\\n]|\\.)*\"
 /* Corchete de cierre */
 ("]") { return symbol(sym.Corchete_c, yytext()); }
 
-/* Punto y coma */
-(";") { return symbol(sym.P_coma, yytext()); }
+/* Delimitador de instruccion */
+("$") { return symbol(sym.Delimitador, yytext()); }
 
 /* Coma */
 (",") { return symbol(sym.Coma, yytext()); }

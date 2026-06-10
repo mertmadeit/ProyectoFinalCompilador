@@ -144,8 +144,8 @@ public class CompiladorLexico {
                 return "Corchete cierre";
             case sym.Main:
                 return "Main";
-            case sym.P_coma:
-                return "Punto y coma";
+            case sym.Delimitador:
+                return "Delimitador";
             case sym.Coma:
                 return "Coma";
             case sym.DosPuntos:

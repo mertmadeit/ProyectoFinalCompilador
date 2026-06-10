@@ -67,7 +67,7 @@ parser code
     private String valorPorDefecto(String tipo) {
         String t = tipo.toLowerCase();
         if ("boolean".equals(t)) return "false";
-        if ("char".equals(t) || "varchar".equals(t)) return "\"\"";
+        if ("char".equals(t) || "varchar".equals(t) || "string".equals(t)) return "\"\"";
         return "0";
     }
 :};
@@ -75,15 +75,15 @@ parser code
 terminal Linea, Comillas, Int, If, Else, Do, While, For,
     Igual, Suma, Resta, Multiplicacion, Division, Op_logico,
     Parentesis_a, Parentesis_c, Llave_a, Llave_c, Corchete_a, Corchete_c,
-    Main, P_coma, ERROR, Punto, Public, Class, Static, Void, String_type,
+    Main, Delimitador, ERROR, Punto, Public, Class, Static, Void, String_type,
     Begin, End, Private, EndWhile, Switch, Case, Break, Default, Println, In, Then, Return, Coma, DosPuntos;
 terminal String Numero, T_dato, Identificador, Op_relacional, Op_booleano, Op_atribucion, Op_incremento, Cadena;
 
-non terminal String INICIO, PROGRAMA, CLASE, METODO, PARAMETROS_OPC, PARAMETROS;
+non terminal String INICIO, PROGRAMA, CLASE, METODO, MODIFICADOR_ACCESO_OPC, STATIC_OPC, PARAMETROS_OPC, PARAMETROS;
 non terminal String BLOQUE_BEGIN, BLOQUE_LLAVES, LISTA_SENTENCIAS, LISTA_SENTENCIAS_OPC, SENTENCIA;
-non terminal String DECLARACION, ASIGNACION, ASIGNADOR, CONTENIDO_PARENTESIS;
+non terminal String DECLARACION, ASIGNACION, ASIGNADOR, CONTENIDO_PARENTESIS, TERMINADOR;
 non terminal String EXPRESION, TERMINO, FACTOR, TIPO_DATO, VALOR;
-non terminal String SENTENCIA_IF, SENTENCIA_WHILE, CONDICION, THEN_OPC;
+non terminal String SENTENCIA_IF, SENTENCIA_WHILE, SENTENCIA_FOR, INICIALIZACION_FOR, ACTUALIZACION_FOR, CONDICION, THEN_OPC;
 non terminal String SENTENCIA_SWITCH, CASOS_SWITCH_OPC, CASOS_SWITCH, CASO_SWITCH, DEFAULT_SWITCH_OPC;
 non terminal Integer MARCA_CI;
 
@@ -100,23 +100,30 @@ PROGRAMA ::=
 ;
 
 CLASE ::=
-    Public Class Identificador:id Llave_a METODO:m Llave_c {:
-        RESULT = "Clase " + id + "\n  " + m.replace("\n", "\n  ");
-    :}
-    |
-    Class Identificador:id Llave_a METODO:m Llave_c {:
-        RESULT = "Clase " + id + "\n  " + m.replace("\n", "\n  ");
+    MODIFICADOR_ACCESO_OPC:mod Class Identificador:id Llave_a METODO:m Llave_c {:
+        RESULT = "Clase " + mod + id + "\n  " + m.replace("\n", "\n  ");
     :}
 ;
 
 METODO ::=
-    Public Static Void Main Parentesis_a PARAMETROS_OPC:p Parentesis_c Llave_a LISTA_SENTENCIAS_OPC:s Llave_c {:
-        RESULT = "Metodo main(" + p + ")\n  Cuerpo:\n    " + (s.isEmpty() ? "<vacio>" : s.replace("\n", "\n    "));
+    MODIFICADOR_ACCESO_OPC:mod STATIC_OPC:est Void Main Parentesis_a PARAMETROS_OPC:p Parentesis_c Llave_a LISTA_SENTENCIAS_OPC:s Llave_c {:
+        RESULT = "Metodo " + mod + est + "java3(" + p + ")\n  Cuerpo:\n    "
+                + (s.isEmpty() ? "<vacio>" : s.replace("\n", "\n    "));
     :}
+;
+
+MODIFICADOR_ACCESO_OPC ::=
+    Public {: RESULT = "public "; :}
     |
-    Void Main Parentesis_a PARAMETROS_OPC:p Parentesis_c Llave_a LISTA_SENTENCIAS_OPC:s Llave_c {:
-        RESULT = "Metodo main(" + p + ")\n  Cuerpo:\n    " + (s.isEmpty() ? "<vacio>" : s.replace("\n", "\n    "));
-    :}
+    Private {: RESULT = "private "; :}
+    |
+    /* vacio */ {: RESULT = ""; :}
+;
+
+STATIC_OPC ::=
+    Static {: RESULT = "constant "; :}
+    |
+    /* vacio */ {: RESULT = ""; :}
 ;
 
 PARAMETROS_OPC ::=
@@ -169,33 +176,35 @@ LISTA_SENTENCIAS ::=
 ;
 
 SENTENCIA ::=
-    DECLARACION:d P_coma {: RESULT = d; :}
+    DECLARACION:d TERMINADOR {: RESULT = d; :}
     |
-    ASIGNACION:a P_coma {: RESULT = a; :}
+    ASIGNACION:a TERMINADOR {: RESULT = a; :}
     |
-    Identificador:id Op_incremento:op P_coma {:
+    Identificador:id Op_incremento:op TERMINADOR {:
         parser.getTabla().verificarExistencia(id, idleft + 1);
         parser.getGenInter().agregarOperacion(id, id, op.startsWith("+") ? "+" : "-", "1");
         parser.getTabla().asignarValor(id, id + " " + (op.startsWith("+") ? "+ 1" : "- 1"), idleft + 1);
         RESULT = "Incremento: " + id + op;
     :}
     |
-    Println Parentesis_a CONTENIDO_PARENTESIS:cp Parentesis_c P_coma {:
+    Println Parentesis_a CONTENIDO_PARENTESIS:cp Parentesis_c TERMINADOR {:
         parser.getGenInter().agregarImpresion(valorExpresion(cp));
         RESULT = "Salida: println(" + textoExpresion(cp) + ")";
     :}
     |
-    In Parentesis_a Identificador:id Parentesis_c P_coma {:
+    In Parentesis_a Identificador:id Parentesis_c TERMINADOR {:
         parser.getTabla().verificarExistencia(id, idleft + 1);
         parser.getGenInter().agregarLectura(id);
         RESULT = "Entrada: in(" + id + ")";
     :}
     |
-    Break P_coma {: RESULT = "Break"; :}
+    Break TERMINADOR {: RESULT = "Break"; :}
     |
     SENTENCIA_IF:si {: RESULT = si; :}
     |
     SENTENCIA_WHILE:sw {: RESULT = sw; :}
+    |
+    SENTENCIA_FOR:sf {: RESULT = sf; :}
     |
     SENTENCIA_SWITCH:ss {: RESULT = ss; :}
     |
@@ -203,9 +212,13 @@ SENTENCIA ::=
     |
     BLOQUE_LLAVES:b {: RESULT = b; :}
     |
-    Return VALOR:v P_coma {: RESULT = "Return " + textoExpresion(v); :}
+    Return VALOR:v TERMINADOR {: RESULT = "Return " + textoExpresion(v); :}
     |
-    Return P_coma {: RESULT = "Return"; :}
+    Return TERMINADOR {: RESULT = "Return"; :}
+;
+
+TERMINADOR ::=
+    Delimitador {: RESULT = "$"; :}
 ;
 
 SENTENCIA_SWITCH ::=
@@ -302,6 +315,34 @@ SENTENCIA_WHILE ::=
         RESULT = "While (" + id + ") {\n  "
                 + (s.isEmpty() ? "<vacio>" : s.replace("\n", "\n  "))
                 + "\n}";
+    :}
+    |
+    Do SENTENCIA:s While Parentesis_a CONDICION:c Parentesis_c TERMINADOR {:
+        RESULT = "Do " + s + " while (" + textoExpresion(c) + ")";
+    :}
+    |
+    Do SENTENCIA:s While Parentesis_a Identificador:id Parentesis_c TERMINADOR {:
+        parser.getTabla().verificarExistencia(id, idleft + 1);
+        RESULT = "Do " + s + " while (" + id + ")";
+    :}
+;
+
+SENTENCIA_FOR ::=
+    For Parentesis_a INICIALIZACION_FOR:i TERMINADOR CONDICION:c TERMINADOR ACTUALIZACION_FOR:a Parentesis_c SENTENCIA:s {:
+        RESULT = "Repeat (" + i + "; " + textoExpresion(c) + "; " + a + ") " + s;
+    :}
+;
+
+INICIALIZACION_FOR ::=
+    DECLARACION:d {: RESULT = d; :}
+    |
+    ASIGNACION:a {: RESULT = a; :}
+;
+
+ACTUALIZACION_FOR ::=
+    Identificador:id Op_incremento:op {:
+        parser.getTabla().verificarExistencia(id, idleft + 1);
+        RESULT = id + op;
     :}
 ;
 

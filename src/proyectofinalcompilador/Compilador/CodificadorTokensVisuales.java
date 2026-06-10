@@ -1,9 +1,7 @@
 package proyectofinalcompilador.Compilador;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Convierte tokens lexicos a una representacion visual compacta para UI.
@@ -12,58 +10,102 @@ public class CodificadorTokensVisuales {
 
     public List<String> codificar(List<CompiladorLexico.TokenInfo> tokens) {
         List<String> resultado = new ArrayList<>();
-        Map<String, Integer> contadores = new HashMap<>();
 
         for (CompiladorLexico.TokenInfo token : tokens) {
-            String categoria = categoria(token);
-            int siguiente = contadores.getOrDefault(categoria, 0) + 1;
-            contadores.put(categoria, siguiente);
-            resultado.add(categoria + siguiente);
+            resultado.add(simbolo(token));
         }
 
         return resultado;
     }
 
-    private String categoria(CompiladorLexico.TokenInfo token) {
+    private String simbolo(CompiladorLexico.TokenInfo token) {
         String tipo = token.tipo;
+        String lexema = token.lexema == null ? "" : token.lexema.toLowerCase();
 
-        if ("Begin".equals(tipo) || "End".equals(tipo) || "EndWhile".equals(tipo)) {
+        if ("Begin".equals(tipo)) {
+            return "a";
+        }
+        if ("End".equals(tipo)) {
             return "b";
         }
-        if ("Identificador".equals(tipo)) {
-            return "i";
+        if ("Delimitador".equals(tipo)) {
+            return "c";
         }
-        if ("Numero".equals(tipo) || "Cadena".equals(tipo) || "Booleano".equals(tipo)) {
-            return "n";
-        }
-        if ("If".equals(tipo) || "Else".equals(tipo) || "Do".equals(tipo) || "While".equals(tipo)
-                || "For".equals(tipo) || "Then".equals(tipo) || "Switch".equals(tipo)
-                || "Case".equals(tipo) || "Break".equals(tipo) || "Default".equals(tipo)
-                || "Return".equals(tipo) || "Println".equals(tipo) || "In".equals(tipo)) {
-            return "k";
-        }
-        if ("Int".equals(tipo) || "Tipo de dato".equals(tipo) || "Tipo String".equals(tipo)
-                || "Class".equals(tipo) || "Public".equals(tipo) || "Private".equals(tipo)
-                || "Static".equals(tipo) || "Void".equals(tipo) || "Main".equals(tipo)) {
-            return "t";
-        }
-        if ("Operador logico".equals(tipo) || "Operador incremento".equals(tipo)
-                || "Operador relacional".equals(tipo) || "Operador atribucion".equals(tipo)
-                || "Igual".equals(tipo) || "Suma".equals(tipo) || "Resta".equals(tipo)
-                || "Multiplicacion".equals(tipo) || "Division".equals(tipo)) {
-            return "o";
-        }
-        if ("Parentesis apertura".equals(tipo) || "Parentesis cierre".equals(tipo)
-                || "Llave apertura".equals(tipo) || "Llave cierre".equals(tipo)
-                || "Corchete apertura".equals(tipo) || "Corchete cierre".equals(tipo)
-                || "Punto y coma".equals(tipo) || "Coma".equals(tipo) || "Punto".equals(tipo)
-                || "Comillas".equals(tipo)) {
+        if ("Int".equals(tipo) || ("Tipo de dato".equals(tipo)
+                && ("entero".equals(lexema) || "integer".equals(lexema)))) {
             return "d";
         }
-        if ("ERROR".equals(tipo)) {
+        if ("Tipo de dato".equals(tipo)
+                && ("real".equals(lexema) || "float".equals(lexema) || "double".equals(lexema))) {
             return "e";
         }
+        if ("Identificador".equals(tipo)) {
+            return "f";
+        }
+        if ("Coma".equals(tipo)) {
+            return "g";
+        }
+        if ("If".equals(tipo)) {
+            return "h";
+        }
+        if ("Parentesis apertura".equals(tipo)) {
+            return "i";
+        }
+        if ("Parentesis cierre".equals(tipo)) {
+            return "j";
+        }
+        if ("Else".equals(tipo)) {
+            return "k";
+        }
+        if ("Igual".equals(tipo) || ("Operador relacional".equals(tipo) && "==".equals(lexema))) {
+            return "l";
+        }
+        if ("Operador relacional".equals(tipo)) {
+            if ("<=".equals(lexema)) {
+                return "m";
+            }
+            if (">=".equals(lexema)) {
+                return "n";
+            }
+            if ("<>".equals(lexema) || "!=".equals(lexema)) {
+                return "o";
+            }
+            if ("<".equals(lexema)) {
+                return "p";
+            }
+            if (">".equals(lexema)) {
+                return "q";
+            }
+        }
+        if ("Numero".equals(tipo)) {
+            return esReal(lexema) ? "s" : "r";
+        }
+        if ("While".equals(tipo)) {
+            return "t";
+        }
+        if ("EndWhile".equals(tipo)) {
+            return "u";
+        }
+        if ("Operador atribucion".equals(tipo) && ":=".equals(lexema)) {
+            return "v";
+        }
+        if ("Suma".equals(tipo)) {
+            return "w";
+        }
+        if ("Multiplicacion".equals(tipo)) {
+            return "x";
+        }
+        if ("Resta".equals(tipo)) {
+            return "y";
+        }
+        if ("Division".equals(tipo)) {
+            return "z";
+        }
 
-        return "x";
+        return "ε";
+    }
+
+    private boolean esReal(String lexema) {
+        return lexema.contains(".") || lexema.contains("e");
     }
 }

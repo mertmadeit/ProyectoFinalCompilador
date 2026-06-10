@@ -30,6 +30,7 @@ public class sym {
   public static final int Punto = 25;
   public static final int Return = 42;
   public static final int While = 8;
+  public static final int Delimitador = 23;
   public static final int Division = 14;
   public static final int Int = 4;
   public static final int Cadena = 52;
@@ -37,7 +38,6 @@ public class sym {
   public static final int Parentesis_a = 16;
   public static final int For = 9;
   public static final int EOF = 0;
-  public static final int P_coma = 23;
   public static final int DosPuntos = 44;
   public static final int error = 1;
   public static final int Switch = 35;
@@ -85,7 +85,7 @@ public class sym {
   "Corchete_a",
   "Corchete_c",
   "Main",
-  "P_coma",
+  "Delimitador",
   "ERROR",
   "Punto",
   "Public",

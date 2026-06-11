@@ -72,17 +72,19 @@ parser code
     }
 :};
 
-terminal Linea, Comillas, Int, If, Else, Do, While, For,
+terminal Linea, Comillas, If, Else, Do, While, For,
     Igual, Suma, Resta, Multiplicacion, Division, Op_logico,
     Parentesis_a, Parentesis_c, Llave_a, Llave_c, Corchete_a, Corchete_c,
-    Main, Delimitador, ERROR, Punto, Public, Class, Static, Void, String_type,
-    Begin, End, Private, EndWhile, Switch, Case, Break, Default, Println, In, Then, Return, Coma, DosPuntos;
-terminal String Numero, T_dato, Identificador, Op_relacional, Op_booleano, Op_atribucion, Op_incremento, Cadena;
+    Main, Delimitador, ERROR, Punto, Public, Class, Static, Void,
+    Begin, End, EndIf, Private, EndWhile, Switch, Case, Break, Default, Println, In, Then, Return, Coma, DosPuntos;
+terminal String Numero, Identificador, Op_relacional, Op_atribucion, Op_incremento, Cadena,
+    Int, String_type, Entero, Real, Integer_type, Float_type, Char_type, Varchar_type,
+    Boolean_type, Byte_type, Long_type, Double_type, True, False;
 
 non terminal String INICIO, PROGRAMA, CLASE, METODO, MODIFICADOR_ACCESO_OPC, STATIC_OPC, PARAMETROS_OPC, PARAMETROS;
-non terminal String BLOQUE_BEGIN, BLOQUE_LLAVES, LISTA_SENTENCIAS, LISTA_SENTENCIAS_OPC, SENTENCIA;
+non terminal String BLOQUE_BEGIN, FIN_BLOQUE, BLOQUE_LLAVES, LISTA_SENTENCIAS, LISTA_SENTENCIAS_OPC, SENTENCIA;
 non terminal String DECLARACION, ASIGNACION, ASIGNADOR, CONTENIDO_PARENTESIS, TERMINADOR;
-non terminal String EXPRESION, TERMINO, FACTOR, TIPO_DATO, VALOR;
+non terminal String EXPRESION, TERMINO, FACTOR, TIPO_DATO, VALOR, BOOLEANO;
 non terminal String SENTENCIA_IF, SENTENCIA_WHILE, SENTENCIA_FOR, INICIALIZACION_FOR, ACTUALIZACION_FOR, CONDICION, THEN_OPC;
 non terminal String SENTENCIA_SWITCH, CASOS_SWITCH_OPC, CASOS_SWITCH, CASO_SWITCH, DEFAULT_SWITCH_OPC;
 non terminal Integer MARCA_CI;
@@ -150,9 +152,15 @@ PARAMETROS ::=
 ;
 
 BLOQUE_BEGIN ::=
-    Begin LISTA_SENTENCIAS_OPC:s End {:
+    Begin LISTA_SENTENCIAS_OPC:s FIN_BLOQUE:f {:
         RESULT = "begin\n" + (s.isEmpty() ? "  <vacio>\n" : "  " + s.replace("\n", "\n  ") + "\n") + "end";
     :}
+;
+
+FIN_BLOQUE ::=
+    End {: RESULT = "end"; :}
+    |
+    EndIf {: RESULT = "endif"; :}
 ;
 
 BLOQUE_LLAVES ::=
@@ -373,7 +381,7 @@ ASIGNACION ::=
 VALOR ::=
     EXPRESION:e {: RESULT = e; :}
     |
-    Op_booleano:b {: RESULT = b + "::::" + b; :}
+    BOOLEANO:b {: RESULT = b; :}
     |
     Cadena:c {: RESULT = "\"" + c + "\"::::\"" + c + "\""; :}
 ;
@@ -387,9 +395,33 @@ ASIGNADOR ::=
 TIPO_DATO ::=
     Int {: RESULT = "int"; :}
     |
-    T_dato:t {: RESULT = t; :}
+    Entero {: RESULT = "entero"; :}
+    |
+    Real {: RESULT = "real"; :}
+    |
+    Integer_type {: RESULT = "integer"; :}
+    |
+    Float_type {: RESULT = "float"; :}
+    |
+    Char_type {: RESULT = "char"; :}
+    |
+    Varchar_type {: RESULT = "varchar"; :}
+    |
+    Boolean_type {: RESULT = "boolean"; :}
+    |
+    Byte_type {: RESULT = "byte"; :}
+    |
+    Long_type {: RESULT = "long"; :}
+    |
+    Double_type {: RESULT = "double"; :}
     |
     String_type {: RESULT = "String"; :}
+;
+
+BOOLEANO ::=
+    True {: RESULT = "true::::true"; :}
+    |
+    False {: RESULT = "false::::false"; :}
 ;
 
 CONDICION ::=
@@ -401,7 +433,7 @@ CONDICION ::=
         RESULT = textoExpresion(e1) + " = " + textoExpresion(e2) + "::::" + valorExpresion(e1) + " == " + valorExpresion(e2);
     :}
     |
-    Op_booleano:b {: RESULT = b + "::::" + b; :}
+    BOOLEANO:b {: RESULT = b; :}
     |
     Parentesis_a CONDICION:c Parentesis_c {: RESULT = "(" + textoExpresion(c) + ")::::(" + valorExpresion(c) + ")"; :}
 ;

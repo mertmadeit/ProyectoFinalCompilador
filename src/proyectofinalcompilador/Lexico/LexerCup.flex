@@ -49,7 +49,7 @@ CADENA=\"([^\"\\\n]|\\.)*\"
 /* Palabras reservadas definidas para el lenguaje */
 ("begin") { return symbol(sym.Begin, yytext()); }
 ("end") { return symbol(sym.End, yytext()); }
-("endif") { return symbol(sym.End, yytext()); }
+("endif") { return symbol(sym.EndIf, yytext()); }
 ("java3") { return symbol(sym.Main, yytext()); }
 ("public") { return symbol(sym.Public, yytext()); }
 ("private") { return symbol(sym.Private, yytext()); }
@@ -74,12 +74,20 @@ CADENA=\"([^\"\\\n]|\\.)*\"
 
 /* Tipos de datos soportados */
 ("int"|"INT") { return symbol(sym.Int, yytext()); }
-("entero"|"real"|"integer"|"float"|"char"|"varchar"|"boolean"|"byte"|"long"|"double") {
-    return symbol(sym.T_dato, yytext());
-}
+("entero") { return symbol(sym.Entero, yytext()); }
+("real") { return symbol(sym.Real, yytext()); }
+("integer") { return symbol(sym.Integer_type, yytext()); }
+("float") { return symbol(sym.Float_type, yytext()); }
+("char") { return symbol(sym.Char_type, yytext()); }
+("varchar") { return symbol(sym.Varchar_type, yytext()); }
+("boolean") { return symbol(sym.Boolean_type, yytext()); }
+("byte") { return symbol(sym.Byte_type, yytext()); }
+("long") { return symbol(sym.Long_type, yytext()); }
+("double") { return symbol(sym.Double_type, yytext()); }
 
 /* Valores booleanos */
-("true"|"false") { return symbol(sym.Op_booleano, yytext()); }
+("true") { return symbol(sym.True, yytext()); }
+("false") { return symbol(sym.False, yytext()); }
 
 /* Operadores logicos */
 ("&&"|"||"|"!"|"&"|"|") { return symbol(sym.Op_logico, yytext()); }

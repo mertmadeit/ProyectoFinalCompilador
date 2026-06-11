@@ -70,10 +70,32 @@ public class CompiladorLexico {
         switch (tokenCode) {
             case sym.Comillas:
                 return "Comillas";
-            case sym.T_dato:
-                return "Tipo de dato";
             case sym.Int:
                 return "Int";
+            case sym.Entero:
+                return "Tipo entero";
+            case sym.Real:
+                return "Tipo real";
+            case sym.Integer_type:
+                return "Tipo integer";
+            case sym.Float_type:
+                return "Tipo float";
+            case sym.Char_type:
+                return "Tipo char";
+            case sym.Varchar_type:
+                return "Tipo varchar";
+            case sym.Boolean_type:
+                return "Tipo boolean";
+            case sym.Byte_type:
+                return "Tipo byte";
+            case sym.Long_type:
+                return "Tipo long";
+            case sym.Double_type:
+                return "Tipo double";
+            case sym.True:
+                return "True";
+            case sym.False:
+                return "False";
             case sym.Cadena:
                 return "Cadena";
             case sym.If:
@@ -90,6 +112,8 @@ public class CompiladorLexico {
                 return "Begin";
             case sym.End:
                 return "End";
+            case sym.EndIf:
+                return "EndIf";
             case sym.Private:
                 return "Private";
             case sym.EndWhile:
@@ -128,8 +152,6 @@ public class CompiladorLexico {
                 return "Operador relacional";
             case sym.Op_atribucion:
                 return "Operador atribucion";
-            case sym.Op_booleano:
-                return "Booleano";
             case sym.Parentesis_a:
                 return "Parentesis apertura";
             case sym.Parentesis_c:
@@ -165,7 +187,7 @@ public class CompiladorLexico {
             case sym.Void:
                 return "Void";
             case sym.String_type:
-                return "Tipo String";
+                return "Tipo text";
             case sym.ERROR:
                 return "ERROR";
             default:

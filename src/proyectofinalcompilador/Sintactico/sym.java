@@ -8,65 +8,75 @@ package proyectofinalcompilador.Sintactico;
 /** CUP generated class containing symbol constants. */
 public class sym {
   /* terminals */
-  public static final int Op_relacional = 48;
-  public static final int In = 40;
-  public static final int Class = 27;
-  public static final int Begin = 31;
-  public static final int Coma = 43;
-  public static final int End = 32;
-  public static final int Op_booleano = 49;
-  public static final int Llave_c = 19;
-  public static final int Llave_a = 18;
-  public static final int If = 5;
-  public static final int Void = 29;
-  public static final int T_dato = 46;
-  public static final int Static = 28;
-  public static final int Default = 38;
-  public static final int Else = 6;
-  public static final int Break = 37;
-  public static final int Corchete_c = 21;
-  public static final int Corchete_a = 20;
-  public static final int Then = 41;
-  public static final int Punto = 25;
-  public static final int Return = 42;
-  public static final int While = 8;
-  public static final int Delimitador = 23;
-  public static final int Division = 14;
-  public static final int Int = 4;
-  public static final int Cadena = 52;
-  public static final int Parentesis_c = 17;
-  public static final int Parentesis_a = 16;
-  public static final int For = 9;
+  public static final int Boolean_type = 58;
+  public static final int Op_relacional = 46;
+  public static final int In = 39;
+  public static final int Class = 26;
+  public static final int True = 62;
+  public static final int Entero = 52;
+  public static final int Begin = 29;
+  public static final int Coma = 42;
+  public static final int End = 30;
+  public static final int Llave_c = 18;
+  public static final int Llave_a = 17;
+  public static final int If = 4;
+  public static final int Void = 28;
+  public static final int Real = 53;
+  public static final int Static = 27;
+  public static final int Default = 37;
+  public static final int Else = 5;
+  public static final int Break = 36;
+  public static final int Corchete_c = 20;
+  public static final int Corchete_a = 19;
+  public static final int Then = 40;
+  public static final int Float_type = 55;
+  public static final int Punto = 24;
+  public static final int Return = 41;
+  public static final int While = 7;
+  public static final int Int = 50;
+  public static final int Delimitador = 22;
+  public static final int Division = 13;
+  public static final int Cadena = 49;
+  public static final int Parentesis_c = 16;
+  public static final int Parentesis_a = 15;
+  public static final int For = 8;
+  public static final int Long_type = 60;
   public static final int EOF = 0;
-  public static final int DosPuntos = 44;
+  public static final int DosPuntos = 43;
   public static final int error = 1;
-  public static final int Switch = 35;
-  public static final int String_type = 30;
+  public static final int Switch = 34;
+  public static final int False = 63;
+  public static final int String_type = 51;
   public static final int Linea = 2;
-  public static final int Private = 33;
-  public static final int Op_atribucion = 50;
-  public static final int Println = 39;
-  public static final int Do = 7;
-  public static final int ERROR = 24;
-  public static final int Case = 36;
-  public static final int Op_logico = 15;
-  public static final int Public = 26;
-  public static final int EndWhile = 34;
-  public static final int Identificador = 47;
-  public static final int Resta = 12;
-  public static final int Multiplicacion = 13;
-  public static final int Op_incremento = 51;
-  public static final int Numero = 45;
-  public static final int Suma = 11;
-  public static final int Main = 22;
-  public static final int Igual = 10;
+  public static final int Private = 32;
+  public static final int Op_atribucion = 47;
+  public static final int Println = 38;
+  public static final int Integer_type = 54;
+  public static final int Do = 6;
+  public static final int ERROR = 23;
+  public static final int Double_type = 61;
+  public static final int Case = 35;
+  public static final int Op_logico = 14;
+  public static final int Public = 25;
+  public static final int EndWhile = 33;
+  public static final int Char_type = 56;
+  public static final int Varchar_type = 57;
+  public static final int Identificador = 45;
+  public static final int EndIf = 31;
+  public static final int Resta = 11;
+  public static final int Multiplicacion = 12;
+  public static final int Op_incremento = 48;
+  public static final int Numero = 44;
+  public static final int Suma = 10;
+  public static final int Main = 21;
+  public static final int Igual = 9;
+  public static final int Byte_type = 59;
   public static final int Comillas = 3;
   public static final String[] terminalNames = new String[] {
   "EOF",
   "error",
   "Linea",
   "Comillas",
-  "Int",
   "If",
   "Else",
   "Do",
@@ -92,9 +102,9 @@ public class sym {
   "Class",
   "Static",
   "Void",
-  "String_type",
   "Begin",
   "End",
+  "EndIf",
   "Private",
   "EndWhile",
   "Switch",
@@ -108,13 +118,25 @@ public class sym {
   "Coma",
   "DosPuntos",
   "Numero",
-  "T_dato",
   "Identificador",
   "Op_relacional",
-  "Op_booleano",
   "Op_atribucion",
   "Op_incremento",
-  "Cadena"
+  "Cadena",
+  "Int",
+  "String_type",
+  "Entero",
+  "Real",
+  "Integer_type",
+  "Float_type",
+  "Char_type",
+  "Varchar_type",
+  "Boolean_type",
+  "Byte_type",
+  "Long_type",
+  "Double_type",
+  "True",
+  "False"
   };
 }
 
